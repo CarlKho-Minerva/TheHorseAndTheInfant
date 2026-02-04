@@ -260,11 +260,14 @@ public class POVTwistManager : MonoBehaviour
         // Enable simple movement for the beast
         showWaitingText = true;
         float moveTime = waitBeforeHeroEnters;
-        float elapsed = 0f;
-        
-        while (elapsed < moveTime)
+        float moveElapsed = 0f;
+
+        // Cache camera for movement loop
+        Camera followCam = Camera.main;
+
+        while (moveElapsed < moveTime)
         {
-            elapsed += Time.deltaTime;
+            moveElapsed += Time.deltaTime;
 
             // Allow player to move the beast around
             if (playerBeast != null)
@@ -272,24 +275,23 @@ public class POVTwistManager : MonoBehaviour
                 float h = Input.GetAxisRaw("Horizontal");
                 float v = Input.GetAxisRaw("Vertical");
                 Vector3 moveDir = new Vector3(h, 0, v).normalized;
-                
+
                 // Simple movement (no physics)
                 playerBeast.transform.position += moveDir * 3f * Time.deltaTime;
 
                 // Update camera to follow
-                Camera mainCam = Camera.main;
-                if (mainCam != null)
+                if (followCam != null)
                 {
                     Vector3 beastPos = playerBeast.transform.position;
                     Vector3 targetCamPos = beastPos + new Vector3(0, 5, -6);
-                    mainCam.transform.position = Vector3.Lerp(mainCam.transform.position, targetCamPos, Time.deltaTime * 3f);
-                    mainCam.transform.LookAt(beastPos + Vector3.up);
+                    followCam.transform.position = Vector3.Lerp(followCam.transform.position, targetCamPos, Time.deltaTime * 3f);
+                    followCam.transform.LookAt(beastPos + Vector3.up);
                 }
             }
 
             yield return null;
         }
-        
+
         showWaitingText = false;
 
         // ========================================

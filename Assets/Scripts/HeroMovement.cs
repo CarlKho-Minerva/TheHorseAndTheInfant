@@ -11,9 +11,14 @@ public class HeroMovement : MonoBehaviour
     public float speed = 8f;
 
     [Header("Map Boundaries")]
-    [Tooltip("Prevents falling off the map")]
-    public float xBound = 12f;  // Tighter bound
-    public float zBound = 12f;  // Tighter bound
+    [Tooltip("If assigned, bounds are calculated automatically from this object's MeshRenderer")]
+    public Transform groundObject;
+
+    [Tooltip("Prevents falling off the map (used if Ground Object is null)")]
+    public float minX = -12f;
+    public float maxX = 12f;
+    public float minZ = -12f;
+    public float maxZ = 12f;
 
     [Header("Ground Snapping")]
     [Tooltip("Layer(s) to consider as ground - should NOT include Enemy layer!")]
@@ -22,19 +27,51 @@ public class HeroMovement : MonoBehaviour
 
     [Header("Edge Blocking")]
     [Tooltip("Stop player before the actual edge")]
-    public float edgeBuffer = 2.0f; // Larger buffer to stop earlier
+    public float edgeBuffer = 0.5f; // Small buffer
 
     private CharacterController controller;
     private Vector3 moveDir;
-    private float actualXBound;
-    private float actualZBound;
 
     void Start() {
         controller = GetComponent<CharacterController>();
 
-        // Calculate actual bounds with buffer
-        actualXBound = xBound - edgeBuffer;
-        actualZBound = zBound - edgeBuffer;
+        // Auto-detect bounds from ground object if assigned
+        if (groundObject != null)
+        {
+            Renderer r = groundObject.GetComponent<Renderer>();
+            if (r != null)
+            {
+                Bounds b = r.bounds;
+                // Calculate bounds with buffer
+                minX = b.min.x + edgeBuffer;
+                maxX = b.max.x - edgeBuffer;
+                minZ = b.min.z + edgeBuffer;
+                maxZ = b.max.z - edgeBuffer;
+                Debug.Log($"[HeroMovement] Auto-configured bounds from {groundObject.name}: X[{minX}, {maxX}] Z[{minZ}, {maxZ}]");
+            }
+            else
+            {
+                // Fallback to manual scale/pos calculation if no renderer (e.g. just collider)
+                // Assuming standard cube scaling
+                Vector3 center = groundObject.position;
+                Vector3 size = groundObject.lossyScale; // Approximate size
+                minX = center.x - size.x/2 + edgeBuffer;
+                maxX = center.x + size.x/2 - edgeBuffer;
+                minZ = center.z - size.z/2 + edgeBuffer;
+                maxZ = center.z + size.z/2 - edgeBuffer;
+            }
+        }
+        else
+        {
+            // Try to find object named "Ground" automatically
+            GameObject g = GameObject.Find("Ground");
+            if (g != null)
+            {
+                groundObject = g.transform;
+                Start(); // Retry setup
+                return;
+            }
+        }
 
         SnapToGround();
     }
@@ -79,11 +116,11 @@ public class HeroMovement : MonoBehaviour
             Vector3 nextPos = transform.position + moveDir * speed * Time.deltaTime;
 
             // Block movement at edges (invisible wall effect)
-            if (nextPos.x < -actualXBound || nextPos.x > actualXBound)
+            if (nextPos.x < minX || nextPos.x > maxX)
             {
                 moveDir.x = 0; // Block X movement
             }
-            if (nextPos.z < -actualZBound || nextPos.z > actualZBound)
+            if (nextPos.z < minZ || nextPos.z > maxZ)
             {
                 moveDir.z = 0; // Block Z movement
             }
@@ -92,8 +129,8 @@ public class HeroMovement : MonoBehaviour
 
             // Hard clamp as safety net
             Vector3 pos = transform.position;
-            float clampedX = Mathf.Clamp(pos.x, -actualXBound, actualXBound);
-            float clampedZ = Mathf.Clamp(pos.z, -actualZBound, actualZBound);
+            float clampedX = Mathf.Clamp(pos.x, minX, maxX);
+            float clampedZ = Mathf.Clamp(pos.z, minZ, maxZ);
 
             // Snap Y to ground
             float targetY = GetGroundHeight();

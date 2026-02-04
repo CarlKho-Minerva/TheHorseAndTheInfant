@@ -257,7 +257,7 @@ public class BeastHealth : MonoBehaviour, IDamageable
     {
         // Check if it's the blade (or any child of the hero with the sword)
         bool isBlade = other.name == "Blade" || other.name.Contains("Sword") || other.name.Contains("Blade");
-        
+
         // Also check parent
         if (!isBlade && other.transform.parent != null)
         {

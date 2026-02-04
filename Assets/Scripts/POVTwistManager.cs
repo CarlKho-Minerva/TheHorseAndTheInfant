@@ -225,47 +225,60 @@ public class POVTwistManager : MonoBehaviour
         fadeAlpha = 0f;
 
         // ========================================
-        // PHASE 4: PLAYER CAN MOVE AS THE SLIME
+        // PHASE 4: BABY SLIME DIALOGUE (with movement)
         // ========================================
 
-        showWaitingText = true;
-        float moveTime = waitBeforeHeroEnters;
-        float moveElapsed = 0f;
         Camera followCam = Camera.main;
 
-        while (moveElapsed < moveTime)
+        // Setup dialogue lines - emotional baby slime waiting for parents
+        dialogueLines = new string[] {
+            "Mom and Dad went out to find food...",
+            "They said they'd be right back.",
+            "It's been a really long time now.",
+            "I hope they're okay...",
+            "What's that sound?"
+        };
+        currentDialogueLine = 0;
+        currentCharIndex = 0;
+        showDialogue = true;
+        dialogueComplete = false;
+        waitingForClick = false;
+
+        // Process each dialogue line with typewriter effect
+        // Player can move around the whole time
+        while (currentDialogueLine < dialogueLines.Length)
         {
-            moveElapsed += Time.deltaTime;
+            string line = dialogueLines[currentDialogueLine];
 
-            // Allow player to move the beast around
-            if (playerBeast != null)
+            // Typewriter effect - type out each character
+            while (currentCharIndex < line.Length)
             {
-                float h = Input.GetAxisRaw("Horizontal");
-                float v = Input.GetAxisRaw("Vertical");
-                Vector3 moveDir = new Vector3(h, 0, v).normalized;
+                currentCharIndex++;
 
-                // Simple movement (no physics)
-                playerBeast.transform.position += moveDir * 3f * Time.deltaTime;
+                // Allow movement during typing
+                UpdateSlimeMovement(followCam);
 
-                // Keep beast ABOVE ground
-                Vector3 pos = playerBeast.transform.position;
-                pos.y = 1.0f;
-                playerBeast.transform.position = pos;
-
-                // Update camera to follow
-                if (followCam != null)
-                {
-                    Vector3 beastPos = playerBeast.transform.position;
-                    Vector3 targetCamPos = beastPos + new Vector3(0, 5, -6);
-                    followCam.transform.position = Vector3.Lerp(followCam.transform.position, targetCamPos, Time.deltaTime * 3f);
-                    followCam.transform.LookAt(beastPos + Vector3.up);
-                }
+                yield return new WaitForSecondsRealtime(0.04f); // Typewriter speed
             }
 
-            yield return null;
+            // Line complete - wait for click to continue
+            waitingForClick = true;
+            while (!Input.GetMouseButtonDown(0))
+            {
+                // Allow movement while waiting for click
+                UpdateSlimeMovement(followCam);
+                yield return null;
+            }
+            waitingForClick = false;
+
+            // Move to next line
+            currentDialogueLine++;
+            currentCharIndex = 0;
+
+            yield return null; // Brief frame gap
         }
 
-        showWaitingText = false;
+        showDialogue = false;
 
         // ========================================
         // PHASE 5: THE HERO ENTERS
@@ -504,6 +517,34 @@ public class POVTwistManager : MonoBehaviour
         fadeAlpha = 1f;
     }
 
+    // Helper method for slime movement during dialogue
+    private void UpdateSlimeMovement(Camera followCam)
+    {
+        if (playerBeast != null)
+        {
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+            Vector3 moveDir = new Vector3(h, 0, v).normalized;
+
+            // Simple movement
+            playerBeast.transform.position += moveDir * 3f * Time.unscaledDeltaTime;
+
+            // Keep beast ABOVE ground
+            Vector3 pos = playerBeast.transform.position;
+            pos.y = 1.0f;
+            playerBeast.transform.position = pos;
+
+            // Update camera to follow
+            if (followCam != null)
+            {
+                Vector3 beastPos = playerBeast.transform.position;
+                Vector3 targetCamPos = beastPos + new Vector3(0, 5, -6);
+                followCam.transform.position = Vector3.Lerp(followCam.transform.position, targetCamPos, Time.unscaledDeltaTime * 3f);
+                followCam.transform.LookAt(beastPos + Vector3.up);
+            }
+        }
+    }
+
     // ========================================
     // GUI RENDERING
     // ========================================
@@ -513,6 +554,17 @@ public class POVTwistManager : MonoBehaviour
     private bool showWaitingText = false;
     private GUIStyle textStyle;
     private GUIStyle smallTextStyle;
+    private GUIStyle dialogueStyle;
+    private GUIStyle endingMainStyle;
+    private GUIStyle endingSubStyle;
+
+    // Dialogue state
+    private bool showDialogue = false;
+    private string[] dialogueLines;
+    private int currentDialogueLine = 0;
+    private int currentCharIndex = 0;
+    private bool dialogueComplete = false;
+    private bool waitingForClick = false;
 
     void OnGUI()
     {
@@ -532,6 +584,33 @@ public class POVTwistManager : MonoBehaviour
             smallTextStyle.fontSize = 20;
             smallTextStyle.alignment = TextAnchor.MiddleCenter;
             smallTextStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
+        }
+
+        if (dialogueStyle == null)
+        {
+            dialogueStyle = new GUIStyle(GUI.skin.label);
+            dialogueStyle.fontSize = 28;
+            dialogueStyle.alignment = TextAnchor.MiddleCenter;
+            dialogueStyle.normal.textColor = new Color(0.95f, 0.9f, 0.8f); // Warm cream
+            dialogueStyle.wordWrap = true;
+        }
+
+        // LARGE sans-serif style for ending
+        if (endingMainStyle == null)
+        {
+            endingMainStyle = new GUIStyle(GUI.skin.label);
+            endingMainStyle.fontSize = Mathf.Max(72, Screen.height / 8); // BIG
+            endingMainStyle.fontStyle = FontStyle.Bold;
+            endingMainStyle.alignment = TextAnchor.MiddleCenter;
+            endingMainStyle.normal.textColor = new Color(0.9f, 0.25f, 0.25f); // Blood red
+        }
+
+        if (endingSubStyle == null)
+        {
+            endingSubStyle = new GUIStyle(GUI.skin.label);
+            endingSubStyle.fontSize = Mathf.Max(32, Screen.height / 20);
+            endingSubStyle.alignment = TextAnchor.MiddleCenter;
+            endingSubStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }
 
         // Screen flash (white)
@@ -557,34 +636,60 @@ public class POVTwistManager : MonoBehaviour
             GUI.Label(waitRect, "...", smallTextStyle);
         }
 
-        // GUILT TRIP ENDING
+        // BABY SLIME DIALOGUE
+        if (showDialogue && dialogueLines != null && currentDialogueLine < dialogueLines.Length)
+        {
+            // Semi-transparent dialogue box at bottom
+            GUI.color = new Color(0, 0, 0, 0.75f);
+            float boxHeight = 120f;
+            Rect boxRect = new Rect(40, Screen.height - boxHeight - 30, Screen.width - 80, boxHeight);
+            GUI.DrawTexture(boxRect, Texture2D.whiteTexture);
+
+            // Current dialogue line (typewriter effect)
+            string line = dialogueLines[currentDialogueLine];
+            string displayText = line.Substring(0, Mathf.Min(currentCharIndex, line.Length));
+
+            GUI.color = dialogueStyle.normal.textColor;
+            Rect textRect = new Rect(60, Screen.height - boxHeight - 10, Screen.width - 120, boxHeight - 20);
+            GUI.Label(textRect, displayText, dialogueStyle);
+
+            // "Click to continue" prompt when line is complete
+            if (waitingForClick)
+            {
+                GUI.color = new Color(0.6f, 0.6f, 0.6f, Mathf.PingPong(Time.unscaledTime * 2f, 1f));
+                Rect clickRect = new Rect(0, Screen.height - 40, Screen.width, 30);
+                GUI.Label(clickRect, "[ Click to continue ]", smallTextStyle);
+            }
+        }
+
+        // GUILT TRIP ENDING - NOW WITH BIG SANS-SERIF FONT
         if (showToBeContinued)
         {
-            // Dark background
-            GUI.color = new Color(0, 0, 0, 0.95f);
+            // Full black background
+            GUI.color = Color.black;
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
 
-            // Main guilt message
-            GUI.color = new Color(0.9f, 0.3f, 0.3f); // Blood red
-            Rect mainRect = new Rect(0, Screen.height / 2 - 80, Screen.width, 60);
-            GUI.Label(mainRect, "That was a baby.", textStyle);
+            // Main guilt message - LARGE
+            GUI.color = endingMainStyle.normal.textColor;
+            Rect mainRect = new Rect(0, Screen.height * 0.25f, Screen.width, Screen.height * 0.2f);
+            GUI.Label(mainRect, "That was a baby.", endingMainStyle);
 
-            // Second line
-            GUI.color = new Color(0.8f, 0.8f, 0.8f);
-            Rect line2Rect = new Rect(0, Screen.height / 2 - 20, Screen.width, 50);
-            GUI.Label(line2Rect, "How satisfying was that kill?", smallTextStyle);
+            // Second line - medium
+            GUI.color = new Color(0.85f, 0.85f, 0.85f);
+            Rect line2Rect = new Rect(0, Screen.height * 0.45f, Screen.width, 60);
+            GUI.Label(line2Rect, "How satisfying was that kill?", endingSubStyle);
 
-            // Meta confession
+            // Meta confession - smaller
             GUI.color = new Color(0.5f, 0.5f, 0.5f);
-            Rect metaRect = new Rect(0, Screen.height / 2 + 40, Screen.width, 50);
+            Rect metaRect = new Rect(0, Screen.height * 0.60f, Screen.width, 40);
             GUI.Label(metaRect, "(Carl didn't have time to flesh out the story.", smallTextStyle);
 
-            Rect meta2Rect = new Rect(0, Screen.height / 2 + 70, Screen.width, 50);
+            Rect meta2Rect = new Rect(0, Screen.height * 0.65f, Screen.width, 40);
             GUI.Label(meta2Rect, "Tell Prof. Watson you felt guilty.)", smallTextStyle);
 
             // Restart hint
             GUI.color = new Color(0.4f, 0.4f, 0.4f, 1f);
-            Rect hintRect = new Rect(0, Screen.height / 2 + 130, Screen.width, 50);
+            Rect hintRect = new Rect(0, Screen.height * 0.85f, Screen.width, 50);
             GUI.Label(hintRect, "[ Click to Restart ]", smallTextStyle);
 
             // Handle restart

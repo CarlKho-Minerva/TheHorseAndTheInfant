@@ -199,8 +199,9 @@ public class Spawner : MonoBehaviour
 
         Debug.Log($"[Spawner] Starting Zoom. Orthographic: {mainCam != null && mainCam.orthographic}");
 
-        // Start SLOW MOTION immediately
-        Time.timeScale = 0.1f;
+        // FORCE set time scale to extremely slow immediately
+        // The zoom effect will happen "during" this slow time
+        Time.timeScale = 0.05f;
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
         // --- ZOOM IN ---
@@ -209,8 +210,8 @@ public class Spawner : MonoBehaviour
 
         while (zoomElapsed < zoomInDuration)
         {
-            zoomElapsed += Time.unscaledDeltaTime;
-            float t = Mathf.SmoothStep(0, 1, zoomElapsed / zoomInDuration);
+            // Use UNSCALED delta time so the zoom happens at normal speed for the player
+            // while the game world is crawling
 
             if (mainCam != null && player != null)
             {

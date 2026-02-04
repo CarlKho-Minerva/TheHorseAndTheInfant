@@ -273,7 +273,8 @@ public class SimpleCombo : MonoBehaviour
 
     IEnumerator HitStopRoutine()
     {
-        if (Time.timeScale < 0.1f) yield break; // Don't interfere with Twist
+        // Don't interfere if we are ALREADY in slow mo (like the matrix finish)
+        if (Time.timeScale < 0.9f) yield break;
 
         float oldScale = Time.timeScale;
         Time.timeScale = 0.05f;

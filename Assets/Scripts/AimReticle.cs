@@ -69,6 +69,9 @@ public class AimReticle : MonoBehaviour
 
         UpdateCirclePosition(new Vector3(0, groundY + yOffset, 0));
         Debug.Log($"[AimReticle] Ready! Using camera: {mainCam.name}");
+
+        // Hide system cursor since we have a reticle
+        Cursor.visible = false;
     }
 
     void Update()

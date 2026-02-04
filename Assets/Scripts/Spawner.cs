@@ -180,7 +180,8 @@ public class Spawner : MonoBehaviour
         Time.fixedDeltaTime = 0.0f;
 
         // Screenshake if available
-        if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.5f, 1.0f);
+        // REMOVED SHAKE: User requested to save the heavy shake for the final baby kill
+        // if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.5f, 1.0f);
 
         // Hold the freeze for a moment
         yield return new WaitForSecondsRealtime(0.5f);

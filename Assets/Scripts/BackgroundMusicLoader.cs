@@ -139,6 +139,9 @@ public class BackgroundMusicLoader : MonoBehaviour
             // Disable CharacterController to allow phasing through walls
             if (heroController != null) heroController.enabled = false;
 
+            // Get hero renderers to fade them out
+            Renderer[] heroRenderers = hero.GetComponentsInChildren<Renderer>();
+
             float t = 0;
             float duration = 4.0f; // 4 seconds of walking/zooming (longer walk)
 
@@ -157,7 +160,35 @@ public class BackgroundMusicLoader : MonoBehaviour
                     hero.transform.position += walkDir * 2f * dt; // Walk speed 2
                 }
 
+                // FADE HERO OUT as they walk into cave (disappear into darkness)
+                // Start fading at t=0.3, fully invisible by t=0.8
+                float fadeStart = 0.3f;
+                float fadeEnd = 0.8f;
+                float fadeT = Mathf.InverseLerp(fadeStart, fadeEnd, t);
+                float alpha = 1f - fadeT;
+
+                foreach (var r in heroRenderers)
+                {
+                    if (r.material.HasProperty("_Color"))
+                    {
+                        Color c = r.material.color;
+                        c.a = alpha;
+                        r.material.color = c;
+                    }
+                }
+
                 yield return null;
+            }
+
+            // Ensure hero is fully invisible at end
+            foreach (var r in heroRenderers)
+            {
+                if (r.material.HasProperty("_Color"))
+                {
+                    Color c = r.material.color;
+                    c.a = 0f;
+                    r.material.color = c;
+                }
             }
         }
 

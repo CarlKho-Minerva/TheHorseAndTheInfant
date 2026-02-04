@@ -175,20 +175,36 @@ public class Spawner : MonoBehaviour
     {
         Debug.Log("[Spawner] Matrix Slow Mo TRIGGERED! FREEZING TIME!");
 
-        // Get camera and player for zoom effect
+        // Get camera and player
         Camera mainCam = Camera.main;
         GameObject player = GameObject.FindGameObjectWithTag("Player");
 
+        // Store original camera settings
         float originalFOV = mainCam != null ? mainCam.fieldOfView : 60f;
-        float zoomedFOV = originalFOV * 0.5f; // Zoom to 50% FOV (2x zoom)
-        Vector3 originalCamPos = mainCam != null ? mainCam.transform.position : Vector3.zero;
+        float originalOrthoSize = mainCam != null ? mainCam.orthographicSize : 5f;
 
-        // FREEZE completely first for dramatic impact
-        Time.timeScale = 0.0f;
-        Time.fixedDeltaTime = 0.0f;
+        // Calculate original offset relative to player (so we can follow them)
+        Vector3 originalOffset = Vector3.zero;
+        if (player != null && mainCam != null)
+        {
+            originalOffset = mainCam.transform.position - player.transform.position;
+        }
 
-        // Start zooming in on the player during freeze
-        float zoomInDuration = 0.4f;
+        // Calculate target offset (CLOSER to player)
+        // Zoom in by moving 30% closer
+        Vector3 targetOffset = originalOffset * 0.7f;
+
+        float targetFOV = originalFOV * 0.7f;
+        float targetOrthoSize = originalOrthoSize * 0.7f;
+
+        Debug.Log($"[Spawner] Starting Zoom. Orthographic: {mainCam != null && mainCam.orthographic}");
+
+        // Start SLOW MOTION immediately
+        Time.timeScale = 0.1f;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+        // --- ZOOM IN ---
+        float zoomInDuration = 0.5f;
         float zoomElapsed = 0f;
 
         while (zoomElapsed < zoomInDuration)
@@ -196,54 +212,72 @@ public class Spawner : MonoBehaviour
             zoomElapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0, 1, zoomElapsed / zoomInDuration);
 
-            if (mainCam != null)
+            if (mainCam != null && player != null)
             {
-                // Zoom FOV
-                mainCam.fieldOfView = Mathf.Lerp(originalFOV, zoomedFOV, t);
+                // Zoom FOV/Ortho
+                if (mainCam.orthographic)
+                    mainCam.orthographicSize = Mathf.Lerp(originalOrthoSize, targetOrthoSize, t);
+                else
+                    mainCam.fieldOfView = Mathf.Lerp(originalFOV, targetFOV, t);
 
-                // Pan camera slightly towards player
-                if (player != null)
-                {
-                    Vector3 targetPos = player.transform.position + new Vector3(0, 4, -5);
-                    mainCam.transform.position = Vector3.Lerp(originalCamPos, targetPos, t * 0.3f);
-                }
+                // Update Position: Player Pos + Lerped Offset
+                // This ensures camera follows player even if they move
+                Vector3 currentOffset = Vector3.Lerp(originalOffset, targetOffset, t);
+                mainCam.transform.position = player.transform.position + currentOffset;
             }
             yield return null;
         }
 
-        // Hold the freeze + zoom for a moment
-        yield return new WaitForSecondsRealtime(0.3f);
+        // --- HOLD (TRACKING PLAYER) ---
+        Debug.Log("[Spawner] Holding Slow Mo...");
+        float holdDuration = 2.0f;
+        float holdElapsed = 0f;
 
-        // Now do SUPER slow mo (0.05 = 5% speed = 20x slower)
-        Time.timeScale = 0.05f;
-        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        while (holdElapsed < holdDuration)
+        {
+            holdElapsed += Time.unscaledDeltaTime;
 
-        Debug.Log("[Spawner] Time now at 5% speed...");
+            // Keep tracking player
+            if (mainCam != null && player != null)
+            {
+                mainCam.transform.position = player.transform.position + targetOffset;
+            }
+            yield return null;
+        }
 
-        // Hold for 2.5 seconds realtime while zoomed
-        yield return new WaitForSecondsRealtime(2.5f);
-
-        // Zoom back out over 0.5 seconds
-        float zoomOutDuration = 0.5f;
+        // --- ZOOM OUT ---
+        float zoomOutDuration = 0.4f;
         zoomElapsed = 0f;
-        Vector3 currentCamPos = mainCam != null ? mainCam.transform.position : Vector3.zero;
-        float currentFOV = mainCam != null ? mainCam.fieldOfView : zoomedFOV;
+        // Don't capture start pos here, calculate from offsets to stay smooth
 
         while (zoomElapsed < zoomOutDuration)
         {
             zoomElapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0, 1, zoomElapsed / zoomOutDuration);
 
-            if (mainCam != null)
+            if (mainCam != null && player != null)
             {
-                mainCam.fieldOfView = Mathf.Lerp(currentFOV, originalFOV, t);
-                mainCam.transform.position = Vector3.Lerp(currentCamPos, originalCamPos, t);
+                if (mainCam.orthographic)
+                    mainCam.orthographicSize = Mathf.Lerp(targetOrthoSize, originalOrthoSize, t);
+                else
+                    mainCam.fieldOfView = Mathf.Lerp(targetFOV, originalFOV, t);
+
+                Vector3 currentOffset = Vector3.Lerp(targetOffset, originalOffset, t);
+                mainCam.transform.position = player.transform.position + currentOffset;
             }
             yield return null;
         }
 
-        // Ensure FOV is restored
-        if (mainCam != null) mainCam.fieldOfView = originalFOV;
+        // Ensure settings are restored exactly
+        if (mainCam != null)
+        {
+            mainCam.fieldOfView = originalFOV;
+            mainCam.orthographicSize = originalOrthoSize;
+
+            // Snap back to relative position just to be clean
+            if (player != null)
+                mainCam.transform.position = player.transform.position + originalOffset;
+        }
 
         // Return to normal
         Debug.Log("[Spawner] Restoring normal time.");

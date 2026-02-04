@@ -686,34 +686,34 @@ public class POVTwistManager : MonoBehaviour
             }
         }
 
-        // GUILT TRIP ENDING - NOW WITH BIG SANS-SERIF FONT
+        // GUILT TRIP ENDING
         if (showToBeContinued)
         {
             // Full black background
             GUI.color = Color.black;
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
 
-            // Main guilt message - LARGE
-            GUI.color = endingMainStyle.normal.textColor;
-            Rect mainRect = new Rect(0, Screen.height * 0.25f, Screen.width, Screen.height * 0.2f);
-            GUI.Label(mainRect, "That was a baby.", endingMainStyle);
+            // Subtle guilt message - Small, centered, white
+            // "Was the combo satisfying?" - understated is more powerful
+            if (smallTextStyle != null)
+            {
+                smallTextStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f); // Almost white
+                smallTextStyle.fontSize = Mathf.Max(16, Screen.height / 30); // Small but readable
+            }
 
-            // Second line - medium
-            GUI.color = new Color(0.85f, 0.85f, 0.85f);
-            Rect line2Rect = new Rect(0, Screen.height * 0.45f, Screen.width, 60);
-            GUI.Label(line2Rect, "How satisfying was that kill?", endingSubStyle);
+            GUI.color = Color.white;
+            Rect centerRect = new Rect(0, Screen.height * 0.45f, Screen.width, 60);
+            GUI.Label(centerRect, "Was the combo satisfying?", smallTextStyle);
 
-            // Meta confession - smaller
-            GUI.color = new Color(0.5f, 0.5f, 0.5f);
-            Rect metaRect = new Rect(0, Screen.height * 0.60f, Screen.width, 40);
-            GUI.Label(metaRect, "(Carl didn't have time to flesh out the story.", smallTextStyle);
-
-            Rect meta2Rect = new Rect(0, Screen.height * 0.65f, Screen.width, 40);
-            GUI.Label(meta2Rect, "Tell Prof. Watson you felt guilty.)", smallTextStyle);
-
-            // Restart hint
-            GUI.color = new Color(0.4f, 0.4f, 0.4f, 1f);
+            // Restart hint (very subtle at bottom)
+            GUI.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Darker
             Rect hintRect = new Rect(0, Screen.height * 0.85f, Screen.width, 50);
+
+            // Revert style for hint
+            if (smallTextStyle != null)
+            {
+                 smallTextStyle.fontSize = Mathf.Max(12, Screen.height / 40);
+            }
             GUI.Label(hintRect, "[ Click to Restart ]", smallTextStyle);
 
             // Handle restart

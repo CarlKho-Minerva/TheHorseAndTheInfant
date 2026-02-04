@@ -131,6 +131,9 @@ public class PixelationEffect : MonoBehaviour
         if (Event.current.type != EventType.Repaint) return;
         if (renderTex == null) return;
 
+        // Draw background (game view) at high depth so it's behind other UI
+        GUI.depth = 1000;
+
         // Draw the pixelated render texture to fill screen
         Graphics.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), renderTex);
 

@@ -241,7 +241,6 @@ public class POVTwistManager : MonoBehaviour
         currentDialogueLine = 0;
         currentCharIndex = 0;
         showDialogue = true;
-        dialogueComplete = false;
         waitingForClick = false;
 
         // Process each dialogue line with typewriter effect
@@ -574,30 +573,23 @@ public class POVTwistManager : MonoBehaviour
     private string[] dialogueLines;
     private int currentDialogueLine = 0;
     private int currentCharIndex = 0;
-    private bool dialogueComplete = false;
     private bool waitingForClick = false;
 
     void OnGUI()
     {
+        // Ensure dialogue is drawn ON TOP of the pixelation background
+        GUI.depth = 0;
+
         // Initialize styles - SERIF fonts for old-timey medieval feel
-        // Try to load a serif font from Resources, fallback to system
+        // Try to load a serif font from Resources
         Font serifFont = Resources.Load<Font>("Fonts/SerifFont");
-        if (serifFont == null)
-        {
-            // Try loading Times New Roman from system (available on most systems)
-            serifFont = Font.CreateDynamicFontFromOSFont("Times New Roman", 48);
-        }
-        if (serifFont == null)
-        {
-            // Fallback to Georgia (another common serif)
-            serifFont = Font.CreateDynamicFontFromOSFont("Georgia", 48);
-        }
+        // WebGL does not support CreateDynamicFontFromOSFont, so we fallback to default font (Arial) if resource is missing
 
         if (textStyle == null)
         {
             textStyle = new GUIStyle(GUI.skin.label);
             if (serifFont != null) textStyle.font = serifFont;
-            textStyle.fontSize = 48;
+            textStyle.fontSize = Mathf.Max(24, Screen.height / 15);
             textStyle.fontStyle = FontStyle.Bold;
             textStyle.alignment = TextAnchor.MiddleCenter;
             textStyle.normal.textColor = Color.white;
@@ -607,7 +599,7 @@ public class POVTwistManager : MonoBehaviour
         {
             smallTextStyle = new GUIStyle(GUI.skin.label);
             if (serifFont != null) smallTextStyle.font = serifFont;
-            smallTextStyle.fontSize = 20;
+            smallTextStyle.fontSize = Mathf.Max(14, Screen.height / 35);
             smallTextStyle.fontStyle = FontStyle.Normal;
             smallTextStyle.alignment = TextAnchor.MiddleCenter;
             smallTextStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
@@ -617,7 +609,7 @@ public class POVTwistManager : MonoBehaviour
         {
             dialogueStyle = new GUIStyle(GUI.skin.label);
             if (serifFont != null) dialogueStyle.font = serifFont;
-            dialogueStyle.fontSize = 28;
+            dialogueStyle.fontSize = Mathf.Max(18, Screen.height / 20); // Dynamic scaling
             dialogueStyle.fontStyle = FontStyle.Italic; // Italic for dialogue
             dialogueStyle.alignment = TextAnchor.MiddleCenter;
             dialogueStyle.normal.textColor = new Color(0.95f, 0.9f, 0.8f); // Warm parchment

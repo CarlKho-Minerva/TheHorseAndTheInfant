@@ -98,6 +98,9 @@ public class BeastHealth : MonoBehaviour, IDamageable
 
         currentHealth -= amount;
 
+        // Check if this is the FINAL KILL before any feedback
+        bool isFinalKill = (currentHealth <= 0 && Spawner.Instance != null && Spawner.Instance.IsLastEnemyOfFinalWave());
+
         // Hit feedback
         StartCoroutine(HitFlash());
         if (hitSFX && audioSource) audioSource.PlayOneShot(hitSFX);
@@ -106,8 +109,8 @@ public class BeastHealth : MonoBehaviour, IDamageable
         var squash = GetComponent<SquashStretch>();
         if (squash != null) squash.TriggerSquash();
 
-        // HIT STOP (Juice)
-        if (SimpleCombo.Instance != null && amount > 0)
+        // HIT STOP (Juice) - SKIP on final kill to let Matrix slow-mo take over
+        if (SimpleCombo.Instance != null && amount > 0 && !isFinalKill)
         {
             SimpleCombo.Instance.TriggerHitStop();
         }

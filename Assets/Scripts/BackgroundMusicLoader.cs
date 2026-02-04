@@ -133,8 +133,21 @@ public class BackgroundMusicLoader : MonoBehaviour
             Vector3 camEndPos = hero.transform.position + new Vector3(0, 4, -4);
             Quaternion camEndRot = Quaternion.LookRotation(hero.transform.position - camEndPos);
 
-            // Calculate walk direction (use current forward)
-            Vector3 walkDir = hero.transform.forward;
+            // Make hero face the cave and walk INTO it
+            GameObject cave = GameObject.Find("Cave");
+            Vector3 walkDir;
+            if (cave != null)
+            {
+                // Face toward the cave
+                Vector3 toCave = (cave.transform.position - hero.transform.position).normalized;
+                toCave.y = 0;
+                hero.transform.forward = toCave;
+                walkDir = toCave;
+            }
+            else
+            {
+                walkDir = hero.transform.forward;
+            }
 
             // Disable CharacterController to allow phasing through walls
             if (heroController != null) heroController.enabled = false;

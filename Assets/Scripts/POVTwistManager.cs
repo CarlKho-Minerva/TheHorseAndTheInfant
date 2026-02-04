@@ -362,15 +362,15 @@ public class POVTwistManager : MonoBehaviour
                 }
             }
 
-            // Enable sword
+            // HIDE sword on appearance - only show during strike
             var combo = playerHero.GetComponent<SimpleCombo>();
             if (combo != null && combo.bladeMesh != null)
             {
-                combo.bladeMesh.enabled = true;
+                combo.bladeMesh.enabled = false; // Hidden until strike
             }
 
-            // Calculate stop position (stop 2 units in front of beast)
-            float stopDistance = 2.0f;
+            // Calculate stop position (stop 4 units in front of beast - further back)
+            float stopDistance = 4.0f;
             Vector3 dirToBeast = (beastPos - heroStartPos).normalized;
             Vector3 stopPos = beastPos - dirToBeast * stopDistance;
             stopPos.y = 1.0f; // Keep hero at correct height
@@ -568,12 +568,14 @@ public class POVTwistManager : MonoBehaviour
 
     void OnGUI()
     {
-        // Initialize styles (use built-in font to avoid dynamic font issues)
+        // Initialize styles - SERIF fonts for old-timey medieval feel
+        // Note: Unity's built-in GUI uses Arial by default. For true serif,
+        // we use FontStyle.Italic which gives a more medieval manuscript feel
         if (textStyle == null)
         {
             textStyle = new GUIStyle(GUI.skin.label);
             textStyle.fontSize = 48;
-            textStyle.fontStyle = FontStyle.Bold;
+            textStyle.fontStyle = FontStyle.BoldAndItalic; // Italic for medieval feel
             textStyle.alignment = TextAnchor.MiddleCenter;
             textStyle.normal.textColor = Color.white;
         }
@@ -582,6 +584,7 @@ public class POVTwistManager : MonoBehaviour
         {
             smallTextStyle = new GUIStyle(GUI.skin.label);
             smallTextStyle.fontSize = 20;
+            smallTextStyle.fontStyle = FontStyle.Italic; // Medieval feel
             smallTextStyle.alignment = TextAnchor.MiddleCenter;
             smallTextStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }
@@ -590,17 +593,18 @@ public class POVTwistManager : MonoBehaviour
         {
             dialogueStyle = new GUIStyle(GUI.skin.label);
             dialogueStyle.fontSize = 28;
+            dialogueStyle.fontStyle = FontStyle.Italic; // Medieval manuscript style
             dialogueStyle.alignment = TextAnchor.MiddleCenter;
-            dialogueStyle.normal.textColor = new Color(0.95f, 0.9f, 0.8f); // Warm cream
+            dialogueStyle.normal.textColor = new Color(0.95f, 0.9f, 0.8f); // Warm parchment
             dialogueStyle.wordWrap = true;
         }
 
-        // LARGE sans-serif style for ending
+        // LARGE serif-style for ending (medieval proclamation)
         if (endingMainStyle == null)
         {
             endingMainStyle = new GUIStyle(GUI.skin.label);
             endingMainStyle.fontSize = Mathf.Max(72, Screen.height / 8); // BIG
-            endingMainStyle.fontStyle = FontStyle.Bold;
+            endingMainStyle.fontStyle = FontStyle.BoldAndItalic; // Medieval proclamation
             endingMainStyle.alignment = TextAnchor.MiddleCenter;
             endingMainStyle.normal.textColor = new Color(0.9f, 0.25f, 0.25f); // Blood red
         }
@@ -609,6 +613,7 @@ public class POVTwistManager : MonoBehaviour
         {
             endingSubStyle = new GUIStyle(GUI.skin.label);
             endingSubStyle.fontSize = Mathf.Max(32, Screen.height / 20);
+            endingSubStyle.fontStyle = FontStyle.Italic; // Medieval feel
             endingSubStyle.alignment = TextAnchor.MiddleCenter;
             endingSubStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }

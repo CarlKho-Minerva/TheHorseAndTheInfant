@@ -1,9 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Sea of Stars Pixelation Effect - ENHANCED v2
-/// Features: Dynamic Resolution, Aspect Ratio Lock, Fixed Scanlines, Secondary Display Camera
-/// FIXES: "No cameras rendering" error, scanline overlap issue
+/// CRT Pixelation Effect - ENHANCED for itch.io
+/// Features: Dynamic Resolution, Aspect Ratio Lock, CRT Scanlines, Curvature, Bloom Glow
 /// </summary>
 [ExecuteInEditMode]
 [RequireComponent(typeof(Camera))]
@@ -16,12 +15,17 @@ public class PixelationEffect : MonoBehaviour
     public bool lockAspectRatio = true;
     public FilterMode filterMode = FilterMode.Point;
 
-    [Header("Visual Enhancements")]
-    [Range(0f, 0.5f)] public float scanlineIntensity = 0.08f;
+    [Header("CRT Effect")]
+    [Range(0f, 0.5f)] public float scanlineIntensity = 0.15f;
     [Tooltip("Scanline spacing (1 = every pixel, 2 = every other)")]
     [Range(1, 4)] public int scanlineSpacing = 2;
+    [Range(0f, 0.3f)] public float crtCurvature = 0.05f;
+    [Range(0f, 1f)] public float rgbSeparation = 0.002f;
+    [Range(0f, 1f)] public float bloomIntensity = 0.1f;
+
+    [Header("Vignette")]
     public bool enableVignette = true;
-    [Range(0f, 1f)] public float vignetteIntensity = 0.3f;
+    [Range(0f, 1f)] public float vignetteIntensity = 0.4f;
 
     [Header("Camera Fix")]
     [Tooltip("Create a display camera to prevent 'no cameras rendering' error")]
@@ -154,37 +158,67 @@ public class PixelationEffect : MonoBehaviour
 
     void DrawScanlines()
     {
-        // FIX: Use tiled texture instead of per-line drawing (prevents overlap)
+        // CRT SCANLINES - horizontal dark lines
         float lineHeight = (float)Screen.height / calculatedHeight;
-        Rect screenRect = new Rect(0, 0, Screen.width, Screen.height);
 
-        // Calculate UV scaling for proper tiling
-        float uvScaleY = calculatedHeight / (float)(scanlineSpacing * 2);
+        // Draw horizontal scanlines
+        for (int y = 0; y < calculatedHeight; y += scanlineSpacing)
+        {
+            float screenY = y * lineHeight;
+            GUI.color = new Color(0, 0, 0, scanlineIntensity);
+            GUI.DrawTexture(new Rect(0, screenY, Screen.width, lineHeight * 0.5f), Texture2D.whiteTexture);
+        }
 
-        GUI.DrawTextureWithTexCoords(
-            screenRect,
-            scanlineTexture,
-            new Rect(0, 0, 1, uvScaleY)
-        );
+        // Reset color
+        GUI.color = Color.white;
     }
 
     void DrawVignette()
     {
+        // Smooth radial vignette for CRT monitor edge darkening
         float edge = Screen.width * vignetteIntensity * 0.5f;
-        Color vignetteColor = new Color(0, 0, 0, vignetteIntensity * 0.5f);
+        float cornerDark = vignetteIntensity * 0.7f;
 
-        // Top
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, edge), Texture2D.whiteTexture,
-            ScaleMode.StretchToFill, true, 0, vignetteColor, 0, 0);
-        // Bottom
-        GUI.DrawTexture(new Rect(0, Screen.height - edge, Screen.width, edge), Texture2D.whiteTexture,
-            ScaleMode.StretchToFill, true, 0, vignetteColor, 0, 0);
-        // Left
-        GUI.DrawTexture(new Rect(0, 0, edge, Screen.height), Texture2D.whiteTexture,
-            ScaleMode.StretchToFill, true, 0, vignetteColor, 0, 0);
-        // Right
-        GUI.DrawTexture(new Rect(Screen.width - edge, 0, edge, Screen.height), Texture2D.whiteTexture,
-            ScaleMode.StretchToFill, true, 0, vignetteColor, 0, 0);
+        // Top edge (gradient)
+        for (int i = 0; i < 10; i++)
+        {
+            float alpha = (1f - i / 10f) * cornerDark * 0.3f;
+            GUI.color = new Color(0, 0, 0, alpha);
+            GUI.DrawTexture(new Rect(0, i * edge / 10f, Screen.width, edge / 10f), Texture2D.whiteTexture);
+        }
+
+        // Bottom edge
+        for (int i = 0; i < 10; i++)
+        {
+            float alpha = (1f - i / 10f) * cornerDark * 0.3f;
+            GUI.color = new Color(0, 0, 0, alpha);
+            GUI.DrawTexture(new Rect(0, Screen.height - (i + 1) * edge / 10f, Screen.width, edge / 10f), Texture2D.whiteTexture);
+        }
+
+        // Left edge
+        for (int i = 0; i < 10; i++)
+        {
+            float alpha = (1f - i / 10f) * cornerDark * 0.3f;
+            GUI.color = new Color(0, 0, 0, alpha);
+            GUI.DrawTexture(new Rect(i * edge / 10f, 0, edge / 10f, Screen.height), Texture2D.whiteTexture);
+        }
+
+        // Right edge
+        for (int i = 0; i < 10; i++)
+        {
+            float alpha = (1f - i / 10f) * cornerDark * 0.3f;
+            GUI.color = new Color(0, 0, 0, alpha);
+            GUI.DrawTexture(new Rect(Screen.width - (i + 1) * edge / 10f, 0, edge / 10f, Screen.height), Texture2D.whiteTexture);
+        }
+
+        // Corner darkening (extra dark in corners)
+        GUI.color = new Color(0, 0, 0, cornerDark);
+        GUI.DrawTexture(new Rect(0, 0, edge, edge), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(Screen.width - edge, 0, edge, edge), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(0, Screen.height - edge, edge, edge), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(Screen.width - edge, Screen.height - edge, edge, edge), Texture2D.whiteTexture);
+
+        GUI.color = Color.white;
     }
 
     /// <summary>

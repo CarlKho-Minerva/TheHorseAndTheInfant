@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        #unity-canvas {
+            background: #000;
+            /* Aspect ratio will be set by JS */
+        }
+
+        /* CRT Monitor Frame Effect */
+        #crt-frame {
+            position: absolute;
+            pointer-events: none;
+            border: 8px solid #1a1a1a;
+            border-radius: 20px;
+            box-shadow:
+                inset 0 0 50px rgba(0,0,0,0.5),
+                0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* Scanline overlay for extra CRT feel */
+        #scanlines {
+            position: absolute;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        #loading-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #loading-cover h1 {
+            color: #c9a227;
+            font-family: 'Times New Roman', serif;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #progress-bar {
+            width: 300px;
+            height: 20px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #8b4513, #c9a227);
+            transition: width 0.3s;
+        }
+
+        #loading-text {
+            color: #888;
+            font-family: 'Times New Roman', serif;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+        <div id="crt-frame"></div>
+        <div id="scanlines"></div>
+    </div>
+
+    <div id="loading-cover">
+        <h1>The Horse and The Infant</h1>
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+        <div id="loading-text">Loading...</div>
+    </div>
+
+    <script>
+        // Target aspect ratio (16:9 for cinematic, or 4:3 for retro)
+        const TARGET_ASPECT = 16 / 9;
+
+        function resizeGame() {
+            const container = document.getElementById('game-container');
+            const canvas = document.getElementById('unity-canvas');
+            const crtFrame = document.getElementById('crt-frame');
+            const scanlines = document.getElementById('scanlines');
+
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const windowAspect = windowWidth / windowHeight;
+
+            let gameWidth, gameHeight;
+
+            if (windowAspect > TARGET_ASPECT) {
+                // Window is wider than game - pillarbox
+                gameHeight = windowHeight;
+                gameWidth = gameHeight * TARGET_ASPECT;
+            } else {
+                // Window is taller than game - letterbox
+                gameWidth = windowWidth;
+                gameHeight = gameWidth / TARGET_ASPECT;
+            }
+
+            // Apply size to canvas
+            canvas.style.width = gameWidth + 'px';
+            canvas.style.height = gameHeight + 'px';
+
+            // Position CRT frame
+            const left = (windowWidth - gameWidth) / 2;
+            const top = (windowHeight - gameHeight) / 2;
+
+            crtFrame.style.width = gameWidth + 'px';
+            crtFrame.style.height = gameHeight + 'px';
+            crtFrame.style.left = left + 'px';
+            crtFrame.style.top = top + 'px';
+
+            scanlines.style.width = gameWidth + 'px';
+            scanlines.style.height = gameHeight + 'px';
+            scanlines.style.left = left + 'px';
+            scanlines.style.top = top + 'px';
+        }
+
+        window.addEventListener('resize', resizeGame);
+        resizeGame();
+    </script>
+
+    <script src="{{{ LOADER_FILENAME }}}"></script>
+    <script>
+        var loadingCover = document.getElementById('loading-cover');
+        var progressFill = document.getElementById('progress-fill');
+        var loadingText = document.getElementById('loading-text');
+
+        createUnityInstance(document.querySelector("#unity-canvas"), {
+            dataUrl: "{{{ DATA_FILENAME }}}",
+            frameworkUrl: "{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+            workerUrl: "{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+            codeUrl: "{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+            memoryUrl: "{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+            symbolsUrl: "{{{ SYMBOLS_FILENAME }}}",
+#endif
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "{{{ COMPANY_NAME }}}",
+            productName: "{{{ PRODUCT_NAME }}}",
+            productVersion: "{{{ PRODUCT_VERSION }}}",
+        }, (progress) => {
+            progressFill.style.width = (progress * 100) + '%';
+            loadingText.textContent = 'Loading... ' + Math.round(progress * 100) + '%';
+        }).then((unityInstance) => {
+            loadingCover.style.display = 'none';
+            resizeGame();
+        }).catch((message) => {
+            loadingText.textContent = 'Error: ' + message;
+            loadingText.style.color = '#f44';
+        });
+    </script>
+</body>
+</html>

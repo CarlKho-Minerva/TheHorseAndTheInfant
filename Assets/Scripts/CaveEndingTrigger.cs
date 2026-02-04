@@ -30,23 +30,18 @@ public class CaveEndingTrigger : MonoBehaviour
                 childCol.enabled = false;
             }
 
-            // Trigger the full POV Twist sequence
-            // This handles: Flash -> Slow-mo -> You become the monster -> Hero kills you -> To Be Continued
-            POVTwistManager twist = FindObjectOfType<POVTwistManager>();
-            if (twist != null)
+            // Trigger the BackgroundMusicLoader ending sequence
+            // This handles: Dramatic music (2:25), Lights out, Camera pan, Player walk into cave
+            // After that completes, it automatically triggers POVTwistManager for Part 2
+            if (BackgroundMusicLoader.Instance != null)
             {
-                twist.TriggerTwist();
+                BackgroundMusicLoader.Instance.TriggerEndingSequence();
             }
             else
             {
-                Debug.LogError("[CaveEndingTrigger] No POVTwistManager found! Add one to the scene.");
-            }
-
-            // Stop the background music loop (optional - POVTwistManager handles atmosphere)
-            if (BackgroundMusicLoader.Instance != null)
-            {
-                // Just stop looping, let POVTwistManager control the ending
-                // BackgroundMusicLoader.Instance.TriggerEndingSequence(); // REMOVED - POVTwist handles this now
+                // Fallback: trigger POVTwist directly if no music loader
+                POVTwistManager twist = FindObjectOfType<POVTwistManager>();
+                if (twist != null) twist.TriggerTwist();
             }
         }
     }

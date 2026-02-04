@@ -58,7 +58,7 @@ public class POVTwistManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Creates a dark cave enclosure for Scene B
+    /// Creates a dark cave atmosphere for Scene B - NO WALLS, just darkness + scaled ground
     /// </summary>
     void CreateCaveEnvironment()
     {
@@ -67,73 +67,34 @@ public class POVTwistManager : MonoBehaviour
         Camera.main.clearFlags = CameraClearFlags.SolidColor;
         Camera.main.backgroundColor = Color.black;
 
-        // Create 4 walls around the player area
-        caveWalls = new GameObject[4];
-        Material darkMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        darkMat.color = new Color(0.1f, 0.08f, 0.06f); // Very dark brown
+        // Dim ambient light significantly
+        RenderSettings.ambientLight = new Color(0.05f, 0.03f, 0.02f); // Very dark
+        RenderSettings.ambientIntensity = 0.2f;
 
-        Vector3 center = playerBeast != null ? playerBeast.transform.position : Vector3.zero;
-        float wallSize = 20f;
-        float wallHeight = 10f;
-
-        // Front wall
-        caveWalls[0] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        caveWalls[0].transform.position = center + new Vector3(0, wallHeight / 2, wallSize / 2);
-        caveWalls[0].transform.localScale = new Vector3(wallSize, wallHeight, 1);
-        caveWalls[0].GetComponent<Renderer>().material = darkMat;
-        caveWalls[0].name = "CaveWall_Front";
-        // Ensure solid collider blocks enemies
-        caveWalls[0].GetComponent<BoxCollider>().isTrigger = false;
-        caveWalls[0].layer = LayerMask.NameToLayer("Default");
-
-        // Back wall
-        caveWalls[1] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        caveWalls[1].transform.position = center + new Vector3(0, wallHeight / 2, -wallSize / 2);
-        caveWalls[1].transform.localScale = new Vector3(wallSize, wallHeight, 1);
-        caveWalls[1].GetComponent<Renderer>().material = darkMat;
-        caveWalls[1].name = "CaveWall_Back";
-        caveWalls[1].GetComponent<BoxCollider>().isTrigger = false;
-        caveWalls[1].layer = LayerMask.NameToLayer("Default");
-
-        // Left wall
-        caveWalls[2] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        caveWalls[2].transform.position = center + new Vector3(-wallSize / 2, wallHeight / 2, 0);
-        caveWalls[2].transform.localScale = new Vector3(1, wallHeight, wallSize);
-        caveWalls[2].GetComponent<Renderer>().material = darkMat;
-        caveWalls[2].name = "CaveWall_Left";
-        caveWalls[2].GetComponent<BoxCollider>().isTrigger = false;
-        caveWalls[2].layer = LayerMask.NameToLayer("Default");
-
-        // Right wall
-        caveWalls[3] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        caveWalls[3].transform.position = center + new Vector3(wallSize / 2, wallHeight / 2, 0);
-        caveWalls[3].transform.localScale = new Vector3(1, wallHeight, wallSize);
-        caveWalls[3].GetComponent<Renderer>().material = darkMat;
-        caveWalls[3].name = "CaveWall_Right";
-        caveWalls[3].GetComponent<BoxCollider>().isTrigger = false;
-        caveWalls[3].layer = LayerMask.NameToLayer("Default");
-
-        // Create a ceiling
-        GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ceiling.transform.position = center + new Vector3(0, wallHeight, 0);
-        ceiling.transform.localScale = new Vector3(wallSize, 1, wallSize);
-        ceiling.GetComponent<Renderer>().material = darkMat;
-        ceiling.name = "CaveCeiling";
-        ceiling.GetComponent<BoxCollider>().isTrigger = false;
-        ceiling.layer = LayerMask.NameToLayer("Default");
-
-        // Bake the NavMesh obstacle so enemies can't walk through
-        foreach (var wall in caveWalls)
+        // Find and scale up the ground to make it feel like a vast dark floor
+        GameObject ground = GameObject.Find("Ground");
+        if (ground != null)
         {
-            if (wall != null)
+            // Scale ground horizontally (X and Z) but NOT vertically (Y)
+            Vector3 currentScale = ground.transform.localScale;
+            ground.transform.localScale = new Vector3(currentScale.x * 3f, currentScale.y, currentScale.z * 3f);
+
+            // Darken the ground material
+            var groundRenderer = ground.GetComponent<Renderer>();
+            if (groundRenderer != null)
             {
-                var obstacle = wall.AddComponent<NavMeshObstacle>();
-                obstacle.carving = true;
-                obstacle.carveOnlyStationary = false;
+                groundRenderer.material.color = new Color(0.1f, 0.08f, 0.06f); // Dark brown cave floor
             }
         }
 
-        Debug.Log("[POVTwist] Cave environment created - you are now INSIDE the cave.");
+        // Destroy the original Cave object walls if they exist
+        // GameObject cave = GameObject.Find("Cave");
+        // if (cave != null)
+        // {
+            // cave.SetActive(false); // USER REQUEST: Don't hide the cave!
+        // }
+
+        Debug.Log("[POVTwist] Cave environment created - darkened scene, scaled ground.");
     }
 
     public void TriggerTwist()
@@ -203,16 +164,16 @@ public class POVTwistManager : MonoBehaviour
             var beastNav = playerBeast.GetComponent<NavMeshAgent>();
             if (beastNav) beastNav.enabled = false;
 
-            // Make it look innocent (warm colors)
-            var renderer = playerBeast.GetComponentInChildren<Renderer>();
-            if (renderer)
+            // Make it GREEN - it's a slime!
+            var renderers = playerBeast.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
             {
-                renderer.material.color = new Color(0.6f, 0.8f, 1.0f); // Soft blue - innocent
+                renderer.material.color = new Color(0.3f, 0.8f, 0.3f); // Green slime
             }
 
-            // FIX: Ensure beast is at ground level (Y = 0.5 for capsule center)
+            // FIX: Ensure beast is ABOVE ground (Y = 1.0 for proper visibility)
             Vector3 beastPos = playerBeast.transform.position;
-            beastPos.y = 0.5f;
+            beastPos.y = 1.0f;
             playerBeast.transform.position = beastPos;
         }
 
@@ -282,9 +243,9 @@ public class POVTwistManager : MonoBehaviour
                 // Simple movement (no physics)
                 playerBeast.transform.position += moveDir * 3f * Time.deltaTime;
 
-                // Keep beast at ground level
+                // Keep beast ABOVE ground
                 Vector3 pos = playerBeast.transform.position;
-                pos.y = 0.5f;
+                pos.y = 1.0f;
                 playerBeast.transform.position = pos;
 
                 // Update camera to follow
@@ -320,9 +281,9 @@ public class POVTwistManager : MonoBehaviour
             // Show hero again
             playerHero.SetActive(true);
 
-            // Place hero at cave entrance (outside the walls)
+            // Place hero at cave entrance (Use TOP/POSITIVE Z to come from upper part of screen)
             Vector3 beastPos = playerBeast.transform.position;
-            Vector3 heroStartPos = beastPos + new Vector3(0, 0, -15f); // Start far back
+            Vector3 heroStartPos = beastPos + new Vector3(0, 0, 15f); // Start at +15 Z (Top)
             heroStartPos.y = 0f;
             playerHero.transform.position = heroStartPos;
 
@@ -406,8 +367,34 @@ public class POVTwistManager : MonoBehaviour
             // Flash
             flashAlpha = 1f;
 
-            // Hold slow-mo for dramatic effect
-            yield return new WaitForSecondsRealtime(slowMoDuration);
+            // MAKE THE HERO SWING THE SWORD during slow-mo!
+            var heroCombo = playerHero.GetComponent<SimpleCombo>();
+            if (heroCombo != null && heroCombo.swordPivot != null)
+            {
+                // Show the sword
+                if (heroCombo.bladeMesh != null) heroCombo.bladeMesh.enabled = true;
+
+                // Animate sword swing in slow motion (using real time)
+                float swingDuration = slowMoDuration * 0.8f; // Most of the slow-mo duration
+                float swingElapsed = 0f;
+                Quaternion startRot = Quaternion.Euler(0, 80, 0);  // Windup position
+                Quaternion endRot = Quaternion.Euler(0, -80, 0);   // Strike position
+                heroCombo.swordPivot.localRotation = startRot;
+
+                while (swingElapsed < swingDuration)
+                {
+                    swingElapsed += Time.unscaledDeltaTime;
+                    float t = swingElapsed / swingDuration;
+                    t = Mathf.SmoothStep(0, 1, t); // Smooth easing
+                    heroCombo.swordPivot.localRotation = Quaternion.Slerp(startRot, endRot, t);
+                    yield return null;
+                }
+            }
+            else
+            {
+                // Fallback: just wait
+                yield return new WaitForSecondsRealtime(slowMoDuration);
+            }
 
             // FADE TO BLACK before the strike connects
             float fadeSpeed = 3f; // Fast fade
@@ -451,30 +438,26 @@ public class POVTwistManager : MonoBehaviour
     private float fadeAlpha = 0f;
     private bool showWaitingText = false;
     private GUIStyle textStyle;
-    private Font pixelifyFont;
+    private GUIStyle smallTextStyle;
 
     void OnGUI()
     {
-        // Load Pixelify font if not loaded
-        if (pixelifyFont == null)
-        {
-            pixelifyFont = Resources.Load<Font>("Fonts/PixelifySans");
-            if (pixelifyFont == null)
-            {
-                // Try alternate paths
-                pixelifyFont = Resources.Load<Font>("PixelifySans");
-            }
-        }
-
-        // Initialize style
+        // Initialize styles (use built-in font to avoid dynamic font issues)
         if (textStyle == null)
         {
-            textStyle = new GUIStyle();
+            textStyle = new GUIStyle(GUI.skin.label);
             textStyle.fontSize = 48;
-            textStyle.fontStyle = FontStyle.Italic;
+            textStyle.fontStyle = FontStyle.Bold;
             textStyle.alignment = TextAnchor.MiddleCenter;
             textStyle.normal.textColor = Color.white;
-            if (pixelifyFont != null) textStyle.font = pixelifyFont;
+        }
+
+        if (smallTextStyle == null)
+        {
+            smallTextStyle = new GUIStyle(GUI.skin.label);
+            smallTextStyle.fontSize = 20;
+            smallTextStyle.alignment = TextAnchor.MiddleCenter;
+            smallTextStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }
 
         // Screen flash (white)
@@ -497,9 +480,7 @@ public class POVTwistManager : MonoBehaviour
         {
             GUI.color = new Color(1, 1, 1, 0.5f);
             Rect waitRect = new Rect(0, Screen.height - 100, Screen.width, 50);
-            textStyle.fontSize = 24;
-            GUI.Label(waitRect, "...", textStyle);
-            textStyle.fontSize = 48;
+            GUI.Label(waitRect, "...", smallTextStyle);
         }
 
         // "TO BE CONTINUED" text
@@ -520,11 +501,9 @@ public class POVTwistManager : MonoBehaviour
             GUI.Label(textRect, "To Be Continued...", textStyle);
 
             // Restart hint
-            textStyle.fontSize = 20;
             GUI.color = new Color(0.7f, 0.7f, 0.7f, 1f);
             Rect hintRect = new Rect(0, Screen.height / 2 + 50, Screen.width, 50);
-            GUI.Label(hintRect, "[ Click to Restart ]", textStyle);
-            textStyle.fontSize = 48;
+            GUI.Label(hintRect, "[ Click to Restart ]", smallTextStyle);
 
             // Handle restart
             if (Input.GetMouseButtonDown(0))

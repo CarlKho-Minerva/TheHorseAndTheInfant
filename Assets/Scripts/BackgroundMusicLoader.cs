@@ -158,23 +158,31 @@ public class BackgroundMusicLoader : MonoBehaviour
             }
         }
 
-        // 4. GUI: TO BE CONTINUED
-        CreateEndingUI();
-
-        // 5. Wait for Restart
-        yield return new WaitForSeconds(1f); // Small delay before allowing restart
-        while (!Input.GetMouseButtonDown(0))
+        // 4. TRIGGER THE POV TWIST (Part 2: Become the slime, get slain)
+        POVTwistManager twist = FindObjectOfType<POVTwistManager>();
+        if (twist != null)
         {
-            yield return null;
+            Debug.Log("[BackgroundMusicLoader] Handing off to POVTwistManager for Part 2...");
+            twist.TriggerTwist();
+            // POVTwistManager handles the rest (slime POV, hero strike, To Be Continued)
+            yield break; // Exit this coroutine - POVTwist takes over
         }
+        else
+        {
+            // Fallback if no POVTwistManager - show ending here
+            Debug.LogWarning("[BackgroundMusicLoader] No POVTwistManager found, showing ending directly.");
+            CreateEndingUI();
 
-        // Restart Game
-        // Destroy the persistent object so music restarts fresh or just reloads scene
-        // Since this is DontDestroyOnLoad, we should probably destroy it if we want a fresh start,
-        // OR handle re-initialization.
-        // Simplest: Destroy this instance and reload scene.
-        Destroy(gameObject);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            // 5. Wait for Restart
+            yield return new WaitForSeconds(1f);
+            while (!Input.GetMouseButtonDown(0))
+            {
+                yield return null;
+            }
+
+            Destroy(gameObject);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 
     // Use OnGUI for guaranteed text rendering

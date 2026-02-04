@@ -129,13 +129,11 @@ public class Spawner : MonoBehaviour
     public bool IsLastEnemyOfFinalWave()
     {
         // currentWave is 0-indexed. waves.Length is the count.
-        // If we are on the last wave index (waves.Length - 1)
-        // AND beastsRemainingInWave is 1 (the one currently being hit/killed)
-        // AND wavesCompleted is false
+        // CHANGED: Trigger on SECOND-TO-LAST beast (beastsRemaining == 2)
+        // This way slow-mo starts, player sees dramatic slash, then kills final beast IN slow-mo
 
-        // Note: currentWave might increment AFTER NextWave() is called, so we check carefully.
         bool isFinalWave = (currentWave == waves.Length - 1);
-        bool result = isFinalWave && beastsRemainingInWave == 1 && !wavesCompleted;
+        bool result = isFinalWave && beastsRemainingInWave == 2 && !wavesCompleted;
         Debug.Log($"[Spawner] IsLastEnemyOfFinalWave? currentWave={currentWave}, waves.Length={waves.Length}, beastsRemaining={beastsRemainingInWave}, wavesCompleted={wavesCompleted} => {result}");
         return result;
     }

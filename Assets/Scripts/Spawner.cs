@@ -135,7 +135,9 @@ public class Spawner : MonoBehaviour
 
         // Note: currentWave might increment AFTER NextWave() is called, so we check carefully.
         bool isFinalWave = (currentWave == waves.Length - 1);
-        return isFinalWave && beastsRemainingInWave == 1 && !wavesCompleted;
+        bool result = isFinalWave && beastsRemainingInWave == 1 && !wavesCompleted;
+        Debug.Log($"[Spawner] IsLastEnemyOfFinalWave? currentWave={currentWave}, waves.Length={waves.Length}, beastsRemaining={beastsRemainingInWave}, wavesCompleted={wavesCompleted} => {result}");
+        return result;
     }
 
     public void OnBeastKilled()

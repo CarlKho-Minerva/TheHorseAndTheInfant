@@ -128,12 +128,22 @@ public class BeastHealth : MonoBehaviour, IDamageable
         // Check death
         if (currentHealth <= 0)
         {
+            Debug.Log($"[BeastHealth] {gameObject.name} DYING! Checking for final kill...");
+
             // CHECK FOR FINAL KILL SLOW MO - BEFORE Die() is called
-            if (Spawner.Instance != null && Spawner.Instance.IsLastEnemyOfFinalWave())
+            if (Spawner.Instance != null)
             {
-                Debug.Log("[BeastHealth] FINAL KILL! Requesting Matrix Slow-Mo from Spawner!");
-                // Trigger slow mo via Spawner (so it persists even if this object dies)
-                Spawner.Instance.TriggerMatrixSlowMo();
+                Debug.Log("[BeastHealth] Spawner exists, checking IsLastEnemyOfFinalWave...");
+                if (Spawner.Instance.IsLastEnemyOfFinalWave())
+                {
+                    Debug.Log("[BeastHealth] FINAL KILL! Requesting Matrix Slow-Mo from Spawner!");
+                    // Trigger slow mo via Spawner (so it persists even if this object dies)
+                    Spawner.Instance.TriggerMatrixSlowMo();
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[BeastHealth] Spawner.Instance is NULL!");
             }
 
             Die();

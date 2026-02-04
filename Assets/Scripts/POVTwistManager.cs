@@ -506,26 +506,34 @@ public class POVTwistManager : MonoBehaviour
             GUI.Label(waitRect, "...", smallTextStyle);
         }
 
-        // "TO BE CONTINUED" text
+        // GUILT TRIP ENDING
         if (showToBeContinued)
         {
             // Dark background
-            GUI.color = new Color(0, 0, 0, 0.85f);
+            GUI.color = new Color(0, 0, 0, 0.95f);
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
 
-            // Shadow
-            GUI.color = new Color(0, 0, 0, 1f);
-            Rect shadowRect = new Rect(4, Screen.height / 2 - 46, Screen.width, 100);
-            GUI.Label(shadowRect, "To Be Continued...", textStyle);
+            // Main guilt message
+            GUI.color = new Color(0.9f, 0.3f, 0.3f); // Blood red
+            Rect mainRect = new Rect(0, Screen.height / 2 - 80, Screen.width, 60);
+            GUI.Label(mainRect, "That was a baby.", textStyle);
 
-            // Main text
-            GUI.color = Color.white;
-            Rect textRect = new Rect(0, Screen.height / 2 - 50, Screen.width, 100);
-            GUI.Label(textRect, "To Be Continued...", textStyle);
+            // Second line
+            GUI.color = new Color(0.8f, 0.8f, 0.8f);
+            Rect line2Rect = new Rect(0, Screen.height / 2 - 20, Screen.width, 50);
+            GUI.Label(line2Rect, "How satisfying was that kill?", smallTextStyle);
+
+            // Meta confession
+            GUI.color = new Color(0.5f, 0.5f, 0.5f);
+            Rect metaRect = new Rect(0, Screen.height / 2 + 40, Screen.width, 50);
+            GUI.Label(metaRect, "(Carl didn't have time to flesh out the story.", smallTextStyle);
+
+            Rect meta2Rect = new Rect(0, Screen.height / 2 + 70, Screen.width, 50);
+            GUI.Label(meta2Rect, "Tell Prof. Watson you felt guilty.)", smallTextStyle);
 
             // Restart hint
-            GUI.color = new Color(0.7f, 0.7f, 0.7f, 1f);
-            Rect hintRect = new Rect(0, Screen.height / 2 + 50, Screen.width, 50);
+            GUI.color = new Color(0.4f, 0.4f, 0.4f, 1f);
+            Rect hintRect = new Rect(0, Screen.height / 2 + 130, Screen.width, 50);
             GUI.Label(hintRect, "[ Click to Restart ]", smallTextStyle);
 
             // Handle restart

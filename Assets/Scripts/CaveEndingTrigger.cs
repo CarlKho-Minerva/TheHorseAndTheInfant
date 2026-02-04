@@ -20,6 +20,16 @@ public class CaveEndingTrigger : MonoBehaviour
             triggered = true;
             Debug.Log("[CaveEndingTrigger] All waves complete! Triggering THE TWIST...");
 
+            // Disable the collider so player can walk INTO the cave
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+
+            // Also disable any child colliders (walls)
+            foreach (var childCol in GetComponentsInChildren<Collider>())
+            {
+                childCol.enabled = false;
+            }
+
             // Trigger the full POV Twist sequence
             // This handles: Flash -> Slow-mo -> You become the monster -> Hero kills you -> To Be Continued
             POVTwistManager twist = FindObjectOfType<POVTwistManager>();

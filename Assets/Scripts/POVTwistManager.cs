@@ -149,53 +149,16 @@ public class POVTwistManager : MonoBehaviour
         Debug.Log("[POVTwist] === SCENE B: THE TWIST BEGINS ===");
 
         // ========================================
-        // PHASE 1: THE IMPACT (Flash, Slow-Mo)
+        // PHASE 1: IMMEDIATE FADE TO BLACK (hide current scene)
         // ========================================
 
-        // Screen Flash
-        flashAlpha = 1f;
+        // Instant fade to black - hide everything while we set up Scene B
+        fadeAlpha = 1f;
 
-        // Slow Motion
-        Time.timeScale = slowMoScale;
-        Time.fixedDeltaTime = 0.02f * Time.timeScale;
-
-        // Heartbeat
-        if (sfxSource && heartbeatClip)
-        {
-            sfxSource.clip = heartbeatClip;
-            sfxSource.loop = true;
-            sfxSource.Play();
-        }
-
-        yield return new WaitForSecondsRealtime(slowMoDuration);
-
-        Time.timeScale = 1.0f;
-        Time.fixedDeltaTime = 0.02f;
-        if (sfxSource) sfxSource.Stop();
-
-        // ========================================
-        // PHASE 2: LIGHTS OUT, POV SWITCH
-        // ========================================
-
-        // Kill the sun
+        // Kill the sun immediately (during black screen)
         if (directionalLight) directionalLight.enabled = false;
         RenderSettings.ambientLight = Color.black;
         RenderSettings.ambientIntensity = 0f;
-
-        // Fade to black
-        fadeAlpha = 0f;
-        while (fadeAlpha < 1f)
-        {
-            fadeAlpha += Time.deltaTime * 2f;
-            yield return null;
-        }
-        fadeAlpha = 1f;
-
-        yield return new WaitForSeconds(1.0f);
-
-        // ========================================
-        // PHASE 3: YOU ARE NOW THE MONSTER
-        // ========================================
 
         // Disable player controls
         if (playerHero != null)
@@ -204,7 +167,16 @@ public class POVTwistManager : MonoBehaviour
             if (heroMove) heroMove.enabled = false;
             var heroCombo = playerHero.GetComponent<SimpleCombo>();
             if (heroCombo) heroCombo.enabled = false;
+
+            // Hide the hero temporarily
+            playerHero.SetActive(false);
         }
+
+        yield return new WaitForSeconds(0.5f); // Brief pause on black
+
+        // ========================================
+        // PHASE 2: SET UP SCENE B (while screen is black)
+        // ========================================
 
         // Find or create a Beast to become the player
         GameObject[] beasts = GameObject.FindGameObjectsWithTag("Enemy");
@@ -223,7 +195,7 @@ public class POVTwistManager : MonoBehaviour
             }
         }
 
-        // Disable beast AI - player will "control" it (but can only wait)
+        // Disable beast AI - player will "control" it
         if (playerBeast != null)
         {
             var beastAI = playerBeast.GetComponent<BeastAI>();
@@ -237,13 +209,20 @@ public class POVTwistManager : MonoBehaviour
             {
                 renderer.material.color = new Color(0.6f, 0.8f, 1.0f); // Soft blue - innocent
             }
+
+            // FIX: Ensure beast is at ground level (Y = 0.5 for capsule center)
+            Vector3 beastPos = playerBeast.transform.position;
+            beastPos.y = 0.5f;
+            playerBeast.transform.position = beastPos;
         }
+
+        // Create cave environment WHILE SCREEN IS BLACK
+        CreateCaveEnvironment();
 
         // Switch camera to look at the beast (the new "player")
         Camera mainCam = Camera.main;
         if (mainCam != null && playerBeast != null)
         {
-            // Position camera to show the cozy den
             Vector3 beastPos = playerBeast.transform.position;
             mainCam.transform.position = beastPos + new Vector3(0, 5, -6);
             mainCam.transform.LookAt(beastPos + Vector3.up);
@@ -258,33 +237,35 @@ public class POVTwistManager : MonoBehaviour
         if (spawner != null && spawner.caveLight != null)
         {
             caveLight = spawner.caveLight;
+            caveLight.gameObject.SetActive(true);
+            caveLight.enabled = true;
             caveLight.color = warmFirelight;
             caveLight.intensity = 50f;
         }
 
-        // Fade back in
+        yield return new WaitForSeconds(0.3f); // Let everything settle
+
+        // ========================================
+        // PHASE 3: FADE IN TO SCENE B (everything is ready)
+        // ========================================
+
+        Debug.Log("[POVTwist] You are now the Beast. Waiting in the den...");
+
+        // Slow fade in
         while (fadeAlpha > 0f)
         {
-            fadeAlpha -= Time.deltaTime * 0.5f; // Slow fade in
+            fadeAlpha -= Time.deltaTime * 0.8f;
             yield return null;
         }
         fadeAlpha = 0f;
-
-        Debug.Log("[POVTwist] You are now the Beast. Waiting in the den...");
 
         // ========================================
         // PHASE 4: PLAYER CAN MOVE AS THE SLIME
         // ========================================
 
-        // Create cave walls (darken the scene further, add enclosure feeling)
-        CreateCaveEnvironment();
-
-        // Enable simple movement for the beast
         showWaitingText = true;
         float moveTime = waitBeforeHeroEnters;
         float moveElapsed = 0f;
-
-        // Cache camera for movement loop
         Camera followCam = Camera.main;
 
         while (moveElapsed < moveTime)
@@ -300,6 +281,11 @@ public class POVTwistManager : MonoBehaviour
 
                 // Simple movement (no physics)
                 playerBeast.transform.position += moveDir * 3f * Time.deltaTime;
+
+                // Keep beast at ground level
+                Vector3 pos = playerBeast.transform.position;
+                pos.y = 0.5f;
+                playerBeast.transform.position = pos;
 
                 // Update camera to follow
                 if (followCam != null)
@@ -328,9 +314,18 @@ public class POVTwistManager : MonoBehaviour
             sfxSource.PlayOneShot(swordUnsheatheClip);
         }
 
-        // Move the Hero towards the beast
+        // Move the Hero towards the beast but STOP before reaching
         if (playerHero != null && playerBeast != null)
         {
+            // Show hero again
+            playerHero.SetActive(true);
+
+            // Place hero at cave entrance (outside the walls)
+            Vector3 beastPos = playerBeast.transform.position;
+            Vector3 heroStartPos = beastPos + new Vector3(0, 0, -15f); // Start far back
+            heroStartPos.y = 0f;
+            playerHero.transform.position = heroStartPos;
+
             // Re-enable hero visuals, make them menacing
             var heroRenderer = playerHero.GetComponentInChildren<Renderer>();
             if (heroRenderer)
@@ -345,15 +340,20 @@ public class POVTwistManager : MonoBehaviour
                 combo.bladeMesh.enabled = true;
             }
 
-            // Walk towards beast
-            Vector3 startPos = playerHero.transform.position;
-            Vector3 endPos = playerBeast.transform.position;
-            float elapsed = 0f;
+            // Calculate stop position (stop 2 units in front of beast)
+            float stopDistance = 2.0f;
+            Vector3 dirToBeast = (beastPos - heroStartPos).normalized;
+            Vector3 stopPos = beastPos - dirToBeast * stopDistance;
+            stopPos.y = 0f;
 
             // Make hero face the beast
-            Vector3 lookDir = (endPos - startPos).normalized;
+            Vector3 lookDir = dirToBeast;
             lookDir.y = 0;
             playerHero.transform.rotation = Quaternion.LookRotation(lookDir);
+
+            // Walk towards beast - STOP at distance
+            float elapsed = 0f;
+            Vector3 startPos = heroStartPos;
 
             while (elapsed < heroApproachTime)
             {
@@ -361,46 +361,76 @@ public class POVTwistManager : MonoBehaviour
                 float t = elapsed / heroApproachTime;
                 t = Mathf.SmoothStep(0, 1, t);
 
-                // Move hero
+                // Move hero to stop position (not to beast position!)
                 CharacterController heroCC = playerHero.GetComponent<CharacterController>();
-                if (heroCC != null)
+                if (heroCC != null) heroCC.enabled = false;
+                playerHero.transform.position = Vector3.Lerp(startPos, stopPos, t);
+
+                // Keep camera following
+                if (followCam != null)
                 {
-                    heroCC.enabled = false;
-                    playerHero.transform.position = Vector3.Lerp(startPos, endPos, t);
-                }
-                else
-                {
-                    playerHero.transform.position = Vector3.Lerp(startPos, endPos, t);
+                    Vector3 camTarget = playerBeast.transform.position;
+                    Vector3 targetCamPos = camTarget + new Vector3(0, 5, -6);
+                    followCam.transform.position = Vector3.Lerp(followCam.transform.position, targetCamPos, Time.deltaTime * 2f);
+                    followCam.transform.LookAt(camTarget + Vector3.up);
                 }
 
                 yield return null;
             }
+
+            // Brief pause - hero is now standing in front of you
+            yield return new WaitForSeconds(0.5f);
+
+            // ========================================
+            // PHASE 6: THE STRIKE - SLOW MO HERE!
+            // ========================================
+
+            Debug.Log("[POVTwist] The Hero strikes... SLOW MOTION!");
+
+            // SLOW MOTION ON THE STRIKE
+            Time.timeScale = slowMoScale;
+            Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+            // Heartbeat during slow-mo
+            if (sfxSource && heartbeatClip)
+            {
+                sfxSource.clip = heartbeatClip;
+                sfxSource.loop = true;
+                sfxSource.Play();
+            }
+
+            // Screen shake
+            var shake = FindObjectOfType<CameraShake>();
+            if (shake) shake.Shake(0.5f, 0.8f);
+
+            // Flash
+            flashAlpha = 1f;
+
+            // Hold slow-mo for dramatic effect
+            yield return new WaitForSecondsRealtime(slowMoDuration);
+
+            // FADE TO BLACK before the strike connects
+            float fadeSpeed = 3f; // Fast fade
+            while (fadeAlpha < 1f)
+            {
+                fadeAlpha += Time.unscaledDeltaTime * fadeSpeed;
+                yield return null;
+            }
+            fadeAlpha = 1f;
+
+            // Restore time
+            Time.timeScale = 1.0f;
+            Time.fixedDeltaTime = 0.02f;
+            if (sfxSource) sfxSource.Stop();
+
+            // Destroy the beast (you died - off screen)
+            if (playerBeast != null)
+            {
+                Destroy(playerBeast);
+            }
+
+            yield return new WaitForSeconds(1.5f);
         }
-
-        // ========================================
-        // PHASE 6: THE KILL
-        // ========================================
-
-        Debug.Log("[POVTwist] The Hero strikes...");
-
-        // Screen shake
-        var shake = FindObjectOfType<CameraShake>();
-        if (shake) shake.Shake(0.5f, 0.8f);
-
-        // Flash and cut to black
-        flashAlpha = 1f;
-        yield return new WaitForSeconds(0.3f);
-
-        // Destroy the beast (you died)
-        if (playerBeast != null)
-        {
-            Destroy(playerBeast);
-        }
-
-        // Full black
-        fadeAlpha = 1f;
-
-        yield return new WaitForSeconds(1.5f);
 
         // ========================================
         // PHASE 7: TO BE CONTINUED
@@ -421,9 +451,21 @@ public class POVTwistManager : MonoBehaviour
     private float fadeAlpha = 0f;
     private bool showWaitingText = false;
     private GUIStyle textStyle;
+    private Font pixelifyFont;
 
     void OnGUI()
     {
+        // Load Pixelify font if not loaded
+        if (pixelifyFont == null)
+        {
+            pixelifyFont = Resources.Load<Font>("Fonts/PixelifySans");
+            if (pixelifyFont == null)
+            {
+                // Try alternate paths
+                pixelifyFont = Resources.Load<Font>("PixelifySans");
+            }
+        }
+
         // Initialize style
         if (textStyle == null)
         {
@@ -432,6 +474,7 @@ public class POVTwistManager : MonoBehaviour
             textStyle.fontStyle = FontStyle.Italic;
             textStyle.alignment = TextAnchor.MiddleCenter;
             textStyle.normal.textColor = Color.white;
+            if (pixelifyFont != null) textStyle.font = pixelifyFont;
         }
 
         // Screen flash (white)

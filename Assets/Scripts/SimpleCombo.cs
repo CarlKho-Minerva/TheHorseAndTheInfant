@@ -206,8 +206,19 @@ public class SimpleCombo : MonoBehaviour
         {
             // COMBO 1 & 2: Side slashes
             Quaternion idleRot = Quaternion.identity;
-            Quaternion windupRot = Quaternion.Euler(0, (step == 1 ? -60 : 60), 0);
-            Quaternion strikeRot = Quaternion.Euler(0, (step == 1 ? 120 : -120), 0);
+
+            // [EDIT HERE to change swing width]
+            // Previous: 120 to -60 (180 degree arc - too spinny)
+            // New: 80 to -80 (160 degree arc - tighter slash)
+            float startAngle = 80f;
+            float endAngle = -80f;
+
+            // Step 1: Right to Left | Step 2: Left to Right
+            float windupAngle = (step == 1) ? startAngle : -startAngle;
+            float strikeAngle = (step == 1) ? endAngle : -endAngle;
+
+            Quaternion windupRot = Quaternion.Euler(0, windupAngle, 0);
+            Quaternion strikeRot = Quaternion.Euler(0, strikeAngle, 0);
 
             // PHASE 1: WIND-UP
             float t = 0;

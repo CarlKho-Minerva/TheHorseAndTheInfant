@@ -63,12 +63,13 @@ public class Spawner : MonoBehaviour
             Debug.Log("Created orange light for cave.");
         }
 
-        // Cave light stays OFF until all waves are complete
+        // Cave light MUST stay OFF until all waves are complete (wave 3 done)
         if (caveLight != null)
         {
             caveLight.enabled = false;
             caveLight.intensity = 0f;
-            Debug.Log($"Cave light initialized but OFF until waves complete");
+            caveLight.gameObject.SetActive(false); // Completely disable until needed
+            Debug.Log($"Cave light initialized but COMPLETELY OFF until wave 3 complete");
         }
         else
         {
@@ -150,12 +151,14 @@ public class Spawner : MonoBehaviour
 
     void ActivateCave()
     {
-        Debug.Log("ActivateCave called!");
+        Debug.Log("ActivateCave called! Wave 3 complete - activating cave glow!");
         if (caveLight != null)
         {
             // Stop dim flickering, start bright pulsing
             if (lightCoroutine != null) StopCoroutine(lightCoroutine);
 
+            // Re-enable the light GameObject first
+            caveLight.gameObject.SetActive(true);
             caveLight.enabled = true;
             caveLight.intensity = brightIntensity;
             Debug.Log("Cave light enabled and pulsing BRIGHTLY!");

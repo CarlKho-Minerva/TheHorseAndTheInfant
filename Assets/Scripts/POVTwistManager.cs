@@ -82,6 +82,9 @@ public class POVTwistManager : MonoBehaviour
         caveWalls[0].transform.localScale = new Vector3(wallSize, wallHeight, 1);
         caveWalls[0].GetComponent<Renderer>().material = darkMat;
         caveWalls[0].name = "CaveWall_Front";
+        // Ensure solid collider blocks enemies
+        caveWalls[0].GetComponent<BoxCollider>().isTrigger = false;
+        caveWalls[0].layer = LayerMask.NameToLayer("Default");
 
         // Back wall
         caveWalls[1] = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -89,6 +92,8 @@ public class POVTwistManager : MonoBehaviour
         caveWalls[1].transform.localScale = new Vector3(wallSize, wallHeight, 1);
         caveWalls[1].GetComponent<Renderer>().material = darkMat;
         caveWalls[1].name = "CaveWall_Back";
+        caveWalls[1].GetComponent<BoxCollider>().isTrigger = false;
+        caveWalls[1].layer = LayerMask.NameToLayer("Default");
 
         // Left wall
         caveWalls[2] = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -96,6 +101,8 @@ public class POVTwistManager : MonoBehaviour
         caveWalls[2].transform.localScale = new Vector3(1, wallHeight, wallSize);
         caveWalls[2].GetComponent<Renderer>().material = darkMat;
         caveWalls[2].name = "CaveWall_Left";
+        caveWalls[2].GetComponent<BoxCollider>().isTrigger = false;
+        caveWalls[2].layer = LayerMask.NameToLayer("Default");
 
         // Right wall
         caveWalls[3] = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -103,6 +110,8 @@ public class POVTwistManager : MonoBehaviour
         caveWalls[3].transform.localScale = new Vector3(1, wallHeight, wallSize);
         caveWalls[3].GetComponent<Renderer>().material = darkMat;
         caveWalls[3].name = "CaveWall_Right";
+        caveWalls[3].GetComponent<BoxCollider>().isTrigger = false;
+        caveWalls[3].layer = LayerMask.NameToLayer("Default");
 
         // Create a ceiling
         GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -110,6 +119,19 @@ public class POVTwistManager : MonoBehaviour
         ceiling.transform.localScale = new Vector3(wallSize, 1, wallSize);
         ceiling.GetComponent<Renderer>().material = darkMat;
         ceiling.name = "CaveCeiling";
+        ceiling.GetComponent<BoxCollider>().isTrigger = false;
+        ceiling.layer = LayerMask.NameToLayer("Default");
+
+        // Bake the NavMesh obstacle so enemies can't walk through
+        foreach (var wall in caveWalls)
+        {
+            if (wall != null)
+            {
+                var obstacle = wall.AddComponent<NavMeshObstacle>();
+                obstacle.carving = true;
+                obstacle.carveOnlyStationary = false;
+            }
+        }
 
         Debug.Log("[POVTwist] Cave environment created - you are now INSIDE the cave.");
     }

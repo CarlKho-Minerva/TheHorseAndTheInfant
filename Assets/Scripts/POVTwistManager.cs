@@ -5,7 +5,7 @@ using System.Collections;
 
 /// <summary>
 /// POV Twist Manager - THE FULL NARRATIVE
-/// 
+///
 /// FLOW:
 /// 1. Player enters cave after killing 3 waves
 /// 2. Screen flash, slow-mo, lights dim
@@ -71,10 +71,10 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 1: THE IMPACT (Flash, Slow-Mo)
         // ========================================
-        
+
         // Screen Flash
         flashAlpha = 1f;
-        
+
         // Slow Motion
         Time.timeScale = slowMoScale;
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
@@ -96,7 +96,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 2: LIGHTS OUT, POV SWITCH
         // ========================================
-        
+
         // Kill the sun
         if (directionalLight) directionalLight.enabled = false;
         RenderSettings.ambientLight = Color.black;
@@ -116,7 +116,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 3: YOU ARE NOW THE MONSTER
         // ========================================
-        
+
         // Disable player controls
         if (playerHero != null)
         {
@@ -195,7 +195,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 4: THE WAIT (Tension)
         // ========================================
-        
+
         // Display "Wait for Mama..." or just silence
         showWaitingText = true;
         yield return new WaitForSeconds(waitBeforeHeroEnters);
@@ -204,7 +204,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 5: THE HERO ENTERS
         // ========================================
-        
+
         Debug.Log("[POVTwist] The Hero enters the den...");
 
         // Sword unsheathe sound
@@ -265,7 +265,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 6: THE KILL
         // ========================================
-        
+
         Debug.Log("[POVTwist] The Hero strikes...");
 
         // Screen shake
@@ -290,7 +290,7 @@ public class POVTwistManager : MonoBehaviour
         // ========================================
         // PHASE 7: TO BE CONTINUED
         // ========================================
-        
+
         Debug.Log("[POVTwist] === TO BE CONTINUED ===");
         showToBeContinued = true;
 
@@ -301,7 +301,7 @@ public class POVTwistManager : MonoBehaviour
     // ========================================
     // GUI RENDERING
     // ========================================
-    
+
     private float flashAlpha = 0f;
     private float fadeAlpha = 0f;
     private bool showWaitingText = false;

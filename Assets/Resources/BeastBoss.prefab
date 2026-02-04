@@ -139,12 +139,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1564733481446852584}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2c28a38c7ee864cc580c9f8576231b99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
+  stoppingDistance: 1.5
+  resumeChaseDistance: 2.5
 --- !u!114 &2083215588795069492
 MonoBehaviour:
   m_ObjectHideFlags: 0

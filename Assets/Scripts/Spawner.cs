@@ -126,6 +126,18 @@ public class Spawner : MonoBehaviour
         }
     }
 
+    public bool IsLastEnemyOfFinalWave()
+    {
+        // currentWave is 0-indexed. waves.Length is the count.
+        // If we are on the last wave index (waves.Length - 1)
+        // AND beastsRemainingInWave is 1 (the one currently being hit/killed)
+        // AND wavesCompleted is false
+
+        // Note: currentWave might increment AFTER NextWave() is called, so we check carefully.
+        bool isFinalWave = (currentWave == waves.Length - 1);
+        return isFinalWave && beastsRemainingInWave == 1 && !wavesCompleted;
+    }
+
     public void OnBeastKilled()
     {
         beastsRemainingInWave--;
@@ -147,23 +159,30 @@ public class Spawner : MonoBehaviour
             wavesCompleted = true;
 
             // Re-instated VICTORY SLOW MO (User Request: "The last final outstanding enemy hits zero health, then it slow-mo's so we can do the Matrix effect")
-            StartCoroutine(VictorySlowMo());
+            // REMOVED from here - moved to BeastHealth.cs for instant feedback upon HP reaching 0
+            // StartCoroutine(VictorySlowMo());
 
             ActivateCave();
         }
     }
 
+    public void TriggerMatrixSlowMo()
+    {
+        StartCoroutine(VictorySlowMo());
+    }
+
     IEnumerator VictorySlowMo()
     {
+        Debug.Log("[Spawner] Matrix Slow Mo TRIGGERED!");
         // Immediate slow mo punch
-        Time.timeScale = 0.2f;
+        Time.timeScale = 0.1f; // Super slow
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
         // Screenshake if available
         if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.3f, 0.5f);
 
-        // Hold for a moment to savor the kill
-        yield return new WaitForSecondsRealtime(1.5f);
+        // Hold for longer to allow "Matrix effect" (orbiting camera etc if player wants, or just cool visual)
+        yield return new WaitForSecondsRealtime(3.0f);
 
         // Return to normal
         Time.timeScale = 1.0f;

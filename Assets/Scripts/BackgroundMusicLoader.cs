@@ -136,8 +136,11 @@ public class BackgroundMusicLoader : MonoBehaviour
             // Calculate walk direction (use current forward)
             Vector3 walkDir = hero.transform.forward;
 
+            // Disable CharacterController to allow phasing through walls
+            if (heroController != null) heroController.enabled = false;
+
             float t = 0;
-            float duration = 3.0f; // 3 seconds of walking/zooming
+            float duration = 4.0f; // 4 seconds of walking/zooming (longer walk)
 
             while(t < 1)
             {
@@ -148,10 +151,10 @@ public class BackgroundMusicLoader : MonoBehaviour
                 mainCam.transform.position = Vector3.Lerp(startPos, camEndPos, t);
                 mainCam.transform.rotation = Quaternion.Slerp(startRot, camEndRot, t);
 
-                // Player Walk
-                if (heroController != null)
+                // Player Walk - Manual Transform Move (Phasing)
+                if (hero != null)
                 {
-                    heroController.Move(walkDir * 2f * dt); // Walk speed 2
+                    hero.transform.position += walkDir * 2f * dt; // Walk speed 2
                 }
 
                 yield return null;

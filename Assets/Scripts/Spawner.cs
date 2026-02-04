@@ -175,16 +175,44 @@ public class Spawner : MonoBehaviour
     {
         Debug.Log("[Spawner] Matrix Slow Mo TRIGGERED! FREEZING TIME!");
 
+        // Get camera and player for zoom effect
+        Camera mainCam = Camera.main;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        float originalFOV = mainCam != null ? mainCam.fieldOfView : 60f;
+        float zoomedFOV = originalFOV * 0.5f; // Zoom to 50% FOV (2x zoom)
+        Vector3 originalCamPos = mainCam != null ? mainCam.transform.position : Vector3.zero;
+
         // FREEZE completely first for dramatic impact
         Time.timeScale = 0.0f;
         Time.fixedDeltaTime = 0.0f;
 
-        // Screenshake if available
-        // REMOVED SHAKE: User requested to save the heavy shake for the final baby kill
-        // if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.5f, 1.0f);
+        // Start zooming in on the player during freeze
+        float zoomInDuration = 0.4f;
+        float zoomElapsed = 0f;
 
-        // Hold the freeze for a moment
-        yield return new WaitForSecondsRealtime(0.5f);
+        while (zoomElapsed < zoomInDuration)
+        {
+            zoomElapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0, 1, zoomElapsed / zoomInDuration);
+
+            if (mainCam != null)
+            {
+                // Zoom FOV
+                mainCam.fieldOfView = Mathf.Lerp(originalFOV, zoomedFOV, t);
+
+                // Pan camera slightly towards player
+                if (player != null)
+                {
+                    Vector3 targetPos = player.transform.position + new Vector3(0, 4, -5);
+                    mainCam.transform.position = Vector3.Lerp(originalCamPos, targetPos, t * 0.3f);
+                }
+            }
+            yield return null;
+        }
+
+        // Hold the freeze + zoom for a moment
+        yield return new WaitForSecondsRealtime(0.3f);
 
         // Now do SUPER slow mo (0.05 = 5% speed = 20x slower)
         Time.timeScale = 0.05f;
@@ -192,8 +220,30 @@ public class Spawner : MonoBehaviour
 
         Debug.Log("[Spawner] Time now at 5% speed...");
 
-        // Hold for 3 seconds realtime
-        yield return new WaitForSecondsRealtime(3.0f);
+        // Hold for 2.5 seconds realtime while zoomed
+        yield return new WaitForSecondsRealtime(2.5f);
+
+        // Zoom back out over 0.5 seconds
+        float zoomOutDuration = 0.5f;
+        zoomElapsed = 0f;
+        Vector3 currentCamPos = mainCam != null ? mainCam.transform.position : Vector3.zero;
+        float currentFOV = mainCam != null ? mainCam.fieldOfView : zoomedFOV;
+
+        while (zoomElapsed < zoomOutDuration)
+        {
+            zoomElapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0, 1, zoomElapsed / zoomOutDuration);
+
+            if (mainCam != null)
+            {
+                mainCam.fieldOfView = Mathf.Lerp(currentFOV, originalFOV, t);
+                mainCam.transform.position = Vector3.Lerp(currentCamPos, originalCamPos, t);
+            }
+            yield return null;
+        }
+
+        // Ensure FOV is restored
+        if (mainCam != null) mainCam.fieldOfView = originalFOV;
 
         // Return to normal
         Debug.Log("[Spawner] Restoring normal time.");

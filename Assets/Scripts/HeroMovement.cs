@@ -79,33 +79,29 @@ public class HeroMovement : MonoBehaviour
     float GetGroundHeight()
     {
         // Raycast down to find ONLY ground (not enemies or player)
-        // Use RaycastAll to penetrate enemies and find the real ground
-        Vector3 origin = transform.position + Vector3.up * 2.0f; // Raise origin to 2.0f to be safe
-        float maxDist = 10.0f;
+        Vector3 origin = transform.position + Vector3.up * 1.0f;
 
-        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, maxDist, groundLayer, QueryTriggerInteraction.Ignore);
-
-        float highestY = float.MinValue;
-        bool found = false;
-
-        foreach (var hit in hits)
+        // Use the groundLayer mask - make sure it doesn't include Enemy layer!
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 5.0f, groundLayer, QueryTriggerInteraction.Ignore))
         {
-            if (hit.collider.gameObject == gameObject) continue;
-            if (hit.collider.CompareTag("Enemy")) continue; // Explicitly ignore enemies
+            // Extra safety: skip if we hit ourselves or an enemy
+            if (hit.collider.gameObject == gameObject) return GetFallbackGroundHeight();
+            if (hit.collider.CompareTag("Enemy")) return GetFallbackGroundHeight();
 
-            // It is a valid ground hit
-            if (hit.point.y > highestY)
-            {
-                highestY = hit.point.y;
-                found = true;
-            }
+            return hit.point.y + heightOffset;
         }
 
-        if (found)
-        {
-            return highestY + heightOffset;
-        }
+        return GetFallbackGroundHeight();
+    }
 
+    // Fallback: return a safe ground height when raycast fails or hits enemy
+    float GetFallbackGroundHeight()
+    {
+        // If we're way too high, pull us back down
+        if (transform.position.y > heightOffset + 0.5f)
+        {
+            return heightOffset; // Default ground level
+        }
         return transform.position.y;
     }
 

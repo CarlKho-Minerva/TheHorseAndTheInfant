@@ -106,11 +106,8 @@ public class BeastHealth : MonoBehaviour, IDamageable
         var squash = GetComponent<SquashStretch>();
         if (squash != null) squash.TriggerSquash();
 
-        // Check if this is the fatal blow for the final enemy (Matrix Mode)
-        bool isFinalKill = (currentHealth <= 0 && Spawner.Instance != null && Spawner.Instance.IsLastEnemyOfFinalWave());
-
-        // HIT STOP (Juice) - ONLY if NOT the final kill (conflicts with Matrix slow mo)
-        if (SimpleCombo.Instance != null && amount > 0 && !isFinalKill)
+        // HIT STOP (Juice)
+        if (SimpleCombo.Instance != null && amount > 0)
         {
             SimpleCombo.Instance.TriggerHitStop();
         }

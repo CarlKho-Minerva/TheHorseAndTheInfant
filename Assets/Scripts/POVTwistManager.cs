@@ -225,48 +225,19 @@ public class POVTwistManager : MonoBehaviour
         fadeAlpha = 0f;
 
         // ========================================
-        // PHASE 4: TYPEWRITER DIALOGUE (Baby Slime POV)
+        // PHASE 4: PLAYER CAN MOVE AS THE SLIME
         // ========================================
 
+        showWaitingText = true;
+        float moveTime = waitBeforeHeroEnters;
+        float moveElapsed = 0f;
         Camera followCam = Camera.main;
 
-        // Show typewriter dialogue
-        dialogueLines = new string[] {
-            "Mom and Dad have been gone for a while...",
-            "They said they'd be right back.",
-            "I wonder what's taking so long?",
-            "",
-            "[Click to continue]"
-        };
-        currentDialogueLine = 0;
-        currentCharIndex = 0;
-        showDialogue = true;
-        dialogueComplete = false;
-
-        // Typewriter effect for each line
-        while (currentDialogueLine < dialogueLines.Length - 1) // Stop before "click to continue"
+        while (moveElapsed < moveTime)
         {
-            string line = dialogueLines[currentDialogueLine];
+            moveElapsed += Time.deltaTime;
 
-            // Type out each character
-            while (currentCharIndex < line.Length)
-            {
-                currentCharIndex++;
-                yield return new WaitForSecondsRealtime(0.05f); // Typewriter speed
-            }
-
-            // Pause at end of line
-            yield return new WaitForSecondsRealtime(0.8f);
-
-            currentDialogueLine++;
-            currentCharIndex = 0;
-        }
-
-        // Show "click to continue" and wait for click
-        dialogueComplete = true;
-        while (!Input.GetMouseButtonDown(0))
-        {
-            // Allow player to move the beast around while waiting
+            // Allow player to move the beast around
             if (playerBeast != null)
             {
                 float h = Input.GetAxisRaw("Horizontal");
@@ -290,10 +261,11 @@ public class POVTwistManager : MonoBehaviour
                     followCam.transform.LookAt(beastPos + Vector3.up);
                 }
             }
+
             yield return null;
         }
 
-        showDialogue = false;
+        showWaitingText = false;
 
         // ========================================
         // PHASE 5: THE HERO ENTERS
@@ -313,44 +285,68 @@ public class POVTwistManager : MonoBehaviour
             // Show hero again
             playerHero.SetActive(true);
 
-            // Reset hero opacity (in case it was faded out earlier)
+            // Place hero INSIDE the cave (spawn from the cave entrance area)
+            // Use the Cave object if available for proper positioning
+            GameObject cave = GameObject.Find("Cave");
+            Vector3 beastPos = playerBeast.transform.position;
+            Vector3 heroStartPos;
+
+            if (cave != null)
+            {
+                // Spawn at cave entrance, facing outward toward the slime
+                heroStartPos = cave.transform.position + new Vector3(0, 1.0f, 0);
+            }
+            else
+            {
+                // Fallback: spawn behind/above the beast
+                heroStartPos = beastPos + new Vector3(0, 0, 12f);
+                heroStartPos.y = 1.0f;
+            }
+            playerHero.transform.position = heroStartPos;
+
+            // Get all hero renderers for fade-in effect
             var heroRenderers = playerHero.GetComponentsInChildren<Renderer>();
+
+            // Start fully transparent
             foreach (var r in heroRenderers)
             {
                 if (r.material.HasProperty("_Color"))
                 {
                     Color c = r.material.color;
-                    c.a = 1f;
+                    c.a = 0f;
                     r.material.color = c;
                 }
             }
 
-            // Place hero INSIDE the cave structure (behind the camera view)
-            // They will walk FROM the cave TOWARDS the slime baby
-            // Use the cave object position if available, otherwise offset from beast
-            GameObject cave = GameObject.Find("Cave");
-            Vector3 heroStartPos;
-
-            if (cave != null)
+            // FADE IN the hero over 1 second
+            float fadeInTime = 1.0f;
+            float fadeElapsed = 0f;
+            while (fadeElapsed < fadeInTime)
             {
-                // Start inside the cave structure
-                heroStartPos = cave.transform.position + cave.transform.forward * -3f; // Inside cave
-                heroStartPos.y = 1.0f;
+                fadeElapsed += Time.deltaTime;
+                float alpha = fadeElapsed / fadeInTime;
+
+                foreach (var r in heroRenderers)
+                {
+                    if (r.material.HasProperty("_Color"))
+                    {
+                        Color c = r.material.color;
+                        c.a = alpha;
+                        r.material.color = c;
+                    }
+                }
+                yield return null;
             }
-            else
-            {
-                // Fallback: start behind camera (positive Z from beast since cam looks from -Z)
-                Vector3 beastPos = playerBeast.transform.position;
-                heroStartPos = beastPos + new Vector3(0, 1.0f, 10f);
-            }
 
-            playerHero.transform.position = heroStartPos;
-
-            // Re-enable hero visuals, make them menacing
-            var heroRenderer = playerHero.GetComponentInChildren<Renderer>();
-            if (heroRenderer)
+            // Ensure fully visible and make them menacing RED
+            foreach (var r in heroRenderers)
             {
-                heroRenderer.material.color = Color.red; // Blood-stained
+                if (r.material.HasProperty("_Color"))
+                {
+                    Color c = Color.red; // Blood-stained
+                    c.a = 1f;
+                    r.material.color = c;
+                }
             }
 
             // Enable sword
@@ -517,14 +513,6 @@ public class POVTwistManager : MonoBehaviour
     private bool showWaitingText = false;
     private GUIStyle textStyle;
     private GUIStyle smallTextStyle;
-    private GUIStyle dialogueStyle;
-
-    // Typewriter dialogue state
-    private bool showDialogue = false;
-    private string[] dialogueLines;
-    private int currentDialogueLine = 0;
-    private int currentCharIndex = 0;
-    private bool dialogueComplete = false;
 
     void OnGUI()
     {
@@ -561,71 +549,12 @@ public class POVTwistManager : MonoBehaviour
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
         }
 
-        // "Waiting..." text (legacy - replaced by dialogue)
+        // "Waiting..." text
         if (showWaitingText)
         {
             GUI.color = new Color(1, 1, 1, 0.5f);
             Rect waitRect = new Rect(0, Screen.height - 100, Screen.width, 50);
             GUI.Label(waitRect, "...", smallTextStyle);
-        }
-
-        // TYPEWRITER DIALOGUE (Baby Slime POV)
-        if (showDialogue && dialogueLines != null)
-        {
-            // Initialize dialogue style
-            if (dialogueStyle == null)
-            {
-                dialogueStyle = new GUIStyle(GUI.skin.label);
-                dialogueStyle.fontSize = 28;
-                dialogueStyle.alignment = TextAnchor.MiddleCenter;
-                dialogueStyle.normal.textColor = new Color(0.9f, 0.85f, 0.7f); // Warm parchment color
-                dialogueStyle.wordWrap = true;
-            }
-
-            // Semi-transparent dialogue box at bottom
-            GUI.color = new Color(0, 0, 0, 0.7f);
-            Rect boxRect = new Rect(50, Screen.height - 180, Screen.width - 100, 150);
-            GUI.DrawTexture(boxRect, Texture2D.whiteTexture);
-
-            // Draw all completed lines plus current line being typed
-            float yPos = Screen.height - 170;
-            for (int i = 0; i <= currentDialogueLine && i < dialogueLines.Length; i++)
-            {
-                string line = dialogueLines[i];
-                string displayText;
-
-                if (i < currentDialogueLine)
-                {
-                    // Previous lines - show full
-                    displayText = line;
-                }
-                else if (i == currentDialogueLine)
-                {
-                    // Current line - show typed portion
-                    displayText = line.Substring(0, Mathf.Min(currentCharIndex, line.Length));
-                }
-                else
-                {
-                    continue;
-                }
-
-                // Skip empty lines for display but keep spacing
-                if (!string.IsNullOrEmpty(displayText))
-                {
-                    GUI.color = dialogueStyle.normal.textColor;
-                    Rect lineRect = new Rect(60, yPos, Screen.width - 120, 35);
-                    GUI.Label(lineRect, displayText, dialogueStyle);
-                }
-                yPos += 30;
-            }
-
-            // Show "click to continue" prompt when ready
-            if (dialogueComplete)
-            {
-                GUI.color = new Color(0.6f, 0.6f, 0.6f, Mathf.PingPong(Time.unscaledTime * 2f, 1f));
-                Rect clickRect = new Rect(0, Screen.height - 50, Screen.width, 30);
-                GUI.Label(clickRect, "[ Click to continue ]", smallTextStyle);
-            }
         }
 
         // GUILT TRIP ENDING

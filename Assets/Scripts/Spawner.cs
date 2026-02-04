@@ -175,18 +175,29 @@ public class Spawner : MonoBehaviour
 
     IEnumerator VictorySlowMo()
     {
-        Debug.Log("[Spawner] Matrix Slow Mo TRIGGERED!");
-        // Immediate slow mo punch
-        Time.timeScale = 0.1f; // Super slow
-        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        Debug.Log("[Spawner] Matrix Slow Mo TRIGGERED! FREEZING TIME!");
+
+        // FREEZE completely first for dramatic impact
+        Time.timeScale = 0.0f;
+        Time.fixedDeltaTime = 0.0f;
 
         // Screenshake if available
-        if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.3f, 0.5f);
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.5f, 1.0f);
 
-        // Hold for longer to allow "Matrix effect" (orbiting camera etc if player wants, or just cool visual)
+        // Hold the freeze for a moment
+        yield return new WaitForSecondsRealtime(0.5f);
+
+        // Now do SUPER slow mo (0.05 = 5% speed = 20x slower)
+        Time.timeScale = 0.05f;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+        Debug.Log("[Spawner] Time now at 5% speed...");
+
+        // Hold for 3 seconds realtime
         yield return new WaitForSecondsRealtime(3.0f);
 
         // Return to normal
+        Debug.Log("[Spawner] Restoring normal time.");
         Time.timeScale = 1.0f;
         Time.fixedDeltaTime = 0.02f;
     }

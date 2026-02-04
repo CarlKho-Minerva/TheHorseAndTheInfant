@@ -320,18 +320,18 @@ public class POVTwistManager : MonoBehaviour
             // Get all hero renderers for fade-in effect
             var heroRenderers = playerHero.GetComponentsInChildren<Renderer>();
 
-            // Start fully transparent
+            // Start fully transparent and WHITE
             foreach (var r in heroRenderers)
             {
                 if (r.material.HasProperty("_Color"))
                 {
-                    Color c = r.material.color;
+                    Color c = Color.white;
                     c.a = 0f;
                     r.material.color = c;
                 }
             }
 
-            // FADE IN the hero over 1 second
+            // FADE IN the hero over 1 second - starts WHITE
             float fadeInTime = 1.0f;
             float fadeElapsed = 0f;
             while (fadeElapsed < fadeInTime)
@@ -343,7 +343,7 @@ public class POVTwistManager : MonoBehaviour
                 {
                     if (r.material.HasProperty("_Color"))
                     {
-                        Color c = r.material.color;
+                        Color c = Color.white; // Start white
                         c.a = alpha;
                         r.material.color = c;
                     }
@@ -351,12 +351,12 @@ public class POVTwistManager : MonoBehaviour
                 yield return null;
             }
 
-            // Ensure fully visible and make them menacing RED
+            // Ensure fully visible WHITE (will turn red during approach)
             foreach (var r in heroRenderers)
             {
                 if (r.material.HasProperty("_Color"))
                 {
-                    Color c = Color.red; // Blood-stained
+                    Color c = Color.white;
                     c.a = 1f;
                     r.material.color = c;
                 }
@@ -388,12 +388,23 @@ public class POVTwistManager : MonoBehaviour
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / heroApproachTime;
-                t = Mathf.SmoothStep(0, 1, t);
+                float smoothT = Mathf.SmoothStep(0, 1, t);
 
                 // Move hero to stop position (not to beast position!)
                 CharacterController heroCC = playerHero.GetComponent<CharacterController>();
                 if (heroCC != null) heroCC.enabled = false;
-                playerHero.transform.position = Vector3.Lerp(startPos, stopPos, t);
+                playerHero.transform.position = Vector3.Lerp(startPos, stopPos, smoothT);
+
+                // GRADUALLY TURN FROM WHITE TO RED during approach
+                Color currentColor = Color.Lerp(Color.white, Color.red, t);
+                foreach (var r in heroRenderers)
+                {
+                    if (r.material.HasProperty("_Color"))
+                    {
+                        currentColor.a = 1f;
+                        r.material.color = currentColor;
+                    }
+                }
 
                 // Keep camera following
                 if (followCam != null)
@@ -569,13 +580,25 @@ public class POVTwistManager : MonoBehaviour
     void OnGUI()
     {
         // Initialize styles - SERIF fonts for old-timey medieval feel
-        // Note: Unity's built-in GUI uses Arial by default. For true serif,
-        // we use FontStyle.Italic which gives a more medieval manuscript feel
+        // Try to load a serif font from Resources, fallback to system
+        Font serifFont = Resources.Load<Font>("Fonts/SerifFont");
+        if (serifFont == null)
+        {
+            // Try loading Times New Roman from system (available on most systems)
+            serifFont = Font.CreateDynamicFontFromOSFont("Times New Roman", 48);
+        }
+        if (serifFont == null)
+        {
+            // Fallback to Georgia (another common serif)
+            serifFont = Font.CreateDynamicFontFromOSFont("Georgia", 48);
+        }
+
         if (textStyle == null)
         {
             textStyle = new GUIStyle(GUI.skin.label);
+            if (serifFont != null) textStyle.font = serifFont;
             textStyle.fontSize = 48;
-            textStyle.fontStyle = FontStyle.BoldAndItalic; // Italic for medieval feel
+            textStyle.fontStyle = FontStyle.Bold;
             textStyle.alignment = TextAnchor.MiddleCenter;
             textStyle.normal.textColor = Color.white;
         }
@@ -583,8 +606,9 @@ public class POVTwistManager : MonoBehaviour
         if (smallTextStyle == null)
         {
             smallTextStyle = new GUIStyle(GUI.skin.label);
+            if (serifFont != null) smallTextStyle.font = serifFont;
             smallTextStyle.fontSize = 20;
-            smallTextStyle.fontStyle = FontStyle.Italic; // Medieval feel
+            smallTextStyle.fontStyle = FontStyle.Normal;
             smallTextStyle.alignment = TextAnchor.MiddleCenter;
             smallTextStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }
@@ -592,19 +616,21 @@ public class POVTwistManager : MonoBehaviour
         if (dialogueStyle == null)
         {
             dialogueStyle = new GUIStyle(GUI.skin.label);
+            if (serifFont != null) dialogueStyle.font = serifFont;
             dialogueStyle.fontSize = 28;
-            dialogueStyle.fontStyle = FontStyle.Italic; // Medieval manuscript style
+            dialogueStyle.fontStyle = FontStyle.Italic; // Italic for dialogue
             dialogueStyle.alignment = TextAnchor.MiddleCenter;
             dialogueStyle.normal.textColor = new Color(0.95f, 0.9f, 0.8f); // Warm parchment
             dialogueStyle.wordWrap = true;
         }
 
-        // LARGE serif-style for ending (medieval proclamation)
+        // LARGE serif for ending (medieval proclamation)
         if (endingMainStyle == null)
         {
             endingMainStyle = new GUIStyle(GUI.skin.label);
+            if (serifFont != null) endingMainStyle.font = serifFont;
             endingMainStyle.fontSize = Mathf.Max(72, Screen.height / 8); // BIG
-            endingMainStyle.fontStyle = FontStyle.BoldAndItalic; // Medieval proclamation
+            endingMainStyle.fontStyle = FontStyle.Bold;
             endingMainStyle.alignment = TextAnchor.MiddleCenter;
             endingMainStyle.normal.textColor = new Color(0.9f, 0.25f, 0.25f); // Blood red
         }
@@ -612,8 +638,9 @@ public class POVTwistManager : MonoBehaviour
         if (endingSubStyle == null)
         {
             endingSubStyle = new GUIStyle(GUI.skin.label);
+            if (serifFont != null) endingSubStyle.font = serifFont;
             endingSubStyle.fontSize = Mathf.Max(32, Screen.height / 20);
-            endingSubStyle.fontStyle = FontStyle.Italic; // Medieval feel
+            endingSubStyle.fontStyle = FontStyle.Normal;
             endingSubStyle.alignment = TextAnchor.MiddleCenter;
             endingSubStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
         }

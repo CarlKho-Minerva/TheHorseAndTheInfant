@@ -149,8 +149,9 @@ public class BackgroundMusicLoader : MonoBehaviour
                 walkDir = hero.transform.forward;
             }
 
-            // Disable CharacterController to allow phasing through walls
-            if (heroController != null) heroController.enabled = false;
+            // KEEP CharacterController enabled - walls should be solid
+            // Hero will walk up to cave entrance and stop (collide with walls)
+            // if (heroController != null) heroController.enabled = false;
 
             // Get hero renderers to fade them out
             Renderer[] heroRenderers = hero.GetComponentsInChildren<Renderer>();

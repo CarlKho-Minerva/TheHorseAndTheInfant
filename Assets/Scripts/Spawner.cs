@@ -109,12 +109,15 @@ public class Spawner : MonoBehaviour
                 Vector3 insideOffset = -caveObject.transform.forward * 3f; // 3 units inside
                 Vector3 randomOffset = new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1f, 1f));
                 spawnPos = origin + insideOffset + randomOffset;
+                // Force Y to ground level (fixes floating beasts)
+                spawnPos.y = 0.0f;
             }
             else
             {
                 // Fallback to spawner position
                 origin = transform.position;
                 spawnPos = origin + new Vector3(Random.Range(-3f, 3f), 0, Random.Range(-3f, 3f));
+                spawnPos.y = 0.0f;
             }
 
             Instantiate(beastPrefab, spawnPos, Quaternion.identity);

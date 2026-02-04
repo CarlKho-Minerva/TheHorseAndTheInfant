@@ -82,11 +82,25 @@ public class SimpleCombo : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && !isAttacking && Time.timeScale > 0.1f)
         {
             // FACE THE MOUSE - using same logic as AimReticle
-            Camera cam = Camera.main;
+            // Robust Camera Find: Priority to PixelationEffect camera
+            Camera cam = null;
+            foreach (Camera c in FindObjectsOfType<Camera>())
+            {
+                if (c.GetComponent<PixelationEffect>() != null)
+                {
+                    cam = c;
+                    break;
+                }
+            }
+            if (cam == null) cam = Camera.main;
+            if (cam == null) cam = FindObjectOfType<Camera>();
+
+            if (cam == null) return;
+
             Vector3 mousePos = Input.mousePosition;
 
             // Handle PixelationEffect RenderTexture
-            if (cam != null && cam.targetTexture != null)
+            if (cam.targetTexture != null)
             {
                 float normalizedX = mousePos.x / Screen.width;
                 float normalizedY = mousePos.y / Screen.height;

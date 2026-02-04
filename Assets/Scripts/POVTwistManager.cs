@@ -171,7 +171,11 @@ public class POVTwistManager : MonoBehaviour
                 renderer.material.color = new Color(0.3f, 0.8f, 0.3f); // Green slime
             }
 
-            // FIX: Ensure beast is ABOVE ground (Y = 1.0 for proper visibility)
+            // FIX: Make it FLATTENED (Horizontal Slime Shape)
+            // Flatten Y, Expand X/Z
+            playerBeast.transform.localScale = new Vector3(1.4f, 0.6f, 1.4f);
+
+            // FIX: Ensure beast is ABOVE ground (Y = 1.0 for proper visibility of the flattened shape)
             Vector3 beastPos = playerBeast.transform.position;
             beastPos.y = 1.0f;
             playerBeast.transform.position = beastPos;
@@ -284,7 +288,7 @@ public class POVTwistManager : MonoBehaviour
             // Place hero at cave entrance (Use TOP/POSITIVE Z to come from upper part of screen)
             Vector3 beastPos = playerBeast.transform.position;
             Vector3 heroStartPos = beastPos + new Vector3(0, 0, 15f); // Start at +15 Z (Top)
-            heroStartPos.y = 0f;
+            heroStartPos.y = 1.0f; // FIX: Hero was in ground (0.0). Set to 1.0f (pivot at feet/center)
             playerHero.transform.position = heroStartPos;
 
             // Re-enable hero visuals, make them menacing
@@ -305,7 +309,7 @@ public class POVTwistManager : MonoBehaviour
             float stopDistance = 2.0f;
             Vector3 dirToBeast = (beastPos - heroStartPos).normalized;
             Vector3 stopPos = beastPos - dirToBeast * stopDistance;
-            stopPos.y = 0f;
+            stopPos.y = 1.0f; // Keep hero at correct height
 
             // Make hero face the beast
             Vector3 lookDir = dirToBeast;
@@ -375,16 +379,28 @@ public class POVTwistManager : MonoBehaviour
                 if (heroCombo.bladeMesh != null) heroCombo.bladeMesh.enabled = true;
 
                 // Animate sword swing in slow motion (using real time)
-                float swingDuration = slowMoDuration * 0.8f; // Most of the slow-mo duration
-                float swingElapsed = 0f;
+                float swingSequenceDuration = slowMoDuration * 1.5f; // Extend duration for windup
+
+                // Windup Phase
+                float windupTime = 0.5f;
                 Quaternion startRot = Quaternion.Euler(0, 80, 0);  // Windup position
                 Quaternion endRot = Quaternion.Euler(0, -80, 0);   // Strike position
-                heroCombo.swordPivot.localRotation = startRot;
 
-                while (swingElapsed < swingDuration)
+                // Hold Windup
+                heroCombo.swordPivot.localRotation = startRot;
+                yield return new WaitForSecondsRealtime(windupTime);
+
+                // Strike Phase
+                float swingElapsed = 0f;
+                float swingSpeed = 0.4f; // Slower swing visual
+
+                // Start Fade DURING the swing
+                StartCoroutine(FadeOutDuringStrike(swingSpeed * 0.8f)); // Fade completely before swing ends
+
+                while (swingElapsed < swingSpeed)
                 {
                     swingElapsed += Time.unscaledDeltaTime;
-                    float t = swingElapsed / swingDuration;
+                    float t = swingElapsed / swingSpeed;
                     t = Mathf.SmoothStep(0, 1, t); // Smooth easing
                     heroCombo.swordPivot.localRotation = Quaternion.Slerp(startRot, endRot, t);
                     yield return null;
@@ -396,18 +412,13 @@ public class POVTwistManager : MonoBehaviour
                 yield return new WaitForSecondsRealtime(slowMoDuration);
             }
 
-            // FADE TO BLACK before the strike connects
-            float fadeSpeed = 3f; // Fast fade
-            while (fadeAlpha < 1f)
-            {
-                fadeAlpha += Time.unscaledDeltaTime * fadeSpeed;
-                yield return null;
-            }
-            fadeAlpha = 1f;
+            // Wait a moment on black screen
+            yield return new WaitForSecondsRealtime(1.0f);
 
             // Restore time
             Time.timeScale = 1.0f;
             Time.fixedDeltaTime = 0.02f;
+            if (sfxSource) sfxSource.Stop();
             if (sfxSource) sfxSource.Stop();
 
             // Destroy the beast (you died - off screen)
@@ -428,6 +439,18 @@ public class POVTwistManager : MonoBehaviour
 
         isTwisting = false;
         OnTwistComplete?.Invoke();
+    }
+
+    private IEnumerator FadeOutDuringStrike(float duration)
+    {
+        float elapsed = 0f;
+        while(elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            fadeAlpha = Mathf.Clamp01(elapsed / duration);
+            yield return null;
+        }
+        fadeAlpha = 1f;
     }
 
     // ========================================

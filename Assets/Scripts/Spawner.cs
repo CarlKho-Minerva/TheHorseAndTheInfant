@@ -145,8 +145,29 @@ public class Spawner : MonoBehaviour
         {
             Debug.Log("All waves completed! Activate Cave!");
             wavesCompleted = true;
+
+            // Re-instated VICTORY SLOW MO (User Request: "The last final outstanding enemy hits zero health, then it slow-mo's so we can do the Matrix effect")
+            StartCoroutine(VictorySlowMo());
+
             ActivateCave();
         }
+    }
+
+    IEnumerator VictorySlowMo()
+    {
+        // Immediate slow mo punch
+        Time.timeScale = 0.2f;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+        // Screenshake if available
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.3f, 0.5f);
+
+        // Hold for a moment to savor the kill
+        yield return new WaitForSecondsRealtime(1.5f);
+
+        // Return to normal
+        Time.timeScale = 1.0f;
+        Time.fixedDeltaTime = 0.02f;
     }
 
     void ActivateCave()

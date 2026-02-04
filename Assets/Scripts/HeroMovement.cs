@@ -79,16 +79,31 @@ public class HeroMovement : MonoBehaviour
     float GetGroundHeight()
     {
         // Raycast down to find ONLY ground (not enemies or player)
-        Vector3 origin = transform.position + Vector3.up * 1.0f;
+        // Use RaycastAll to penetrate enemies and find the real ground
+        Vector3 origin = transform.position + Vector3.up * 2.0f; // Raise origin to 2.0f to be safe
+        float maxDist = 10.0f;
 
-        // Use the groundLayer mask - make sure it doesn't include Enemy layer!
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 5.0f, groundLayer, QueryTriggerInteraction.Ignore))
+        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, maxDist, groundLayer, QueryTriggerInteraction.Ignore);
+
+        float highestY = float.MinValue;
+        bool found = false;
+
+        foreach (var hit in hits)
         {
-            // Extra safety: skip if we hit ourselves or an enemy
-            if (hit.collider.gameObject == gameObject) return transform.position.y;
-            if (hit.collider.CompareTag("Enemy")) return transform.position.y;
+            if (hit.collider.gameObject == gameObject) continue;
+            if (hit.collider.CompareTag("Enemy")) continue; // Explicitly ignore enemies
 
-            return hit.point.y + heightOffset;
+            // It is a valid ground hit
+            if (hit.point.y > highestY)
+            {
+                highestY = hit.point.y;
+                found = true;
+            }
+        }
+
+        if (found)
+        {
+            return highestY + heightOffset;
         }
 
         return transform.position.y;

@@ -255,12 +255,22 @@ public class BeastHealth : MonoBehaviour, IDamageable
     // Called by SimpleCombo's blade trigger
     void OnTriggerEnter(Collider other)
     {
-        if (other.name == "Blade" && !isDead)
+        // Check if it's the blade (or any child of the hero with the sword)
+        bool isBlade = other.name == "Blade" || other.name.Contains("Sword") || other.name.Contains("Blade");
+        
+        // Also check parent
+        if (!isBlade && other.transform.parent != null)
+        {
+            isBlade = other.transform.parent.name.Contains("Sword") || other.transform.parent.name.Contains("Pivot");
+        }
+
+        if (isBlade && !isDead)
         {
             GameObject hero = GameObject.FindGameObjectWithTag("Player");
             SimpleCombo combo = hero?.GetComponent<SimpleCombo>();
 
-            if (combo != null && (combo.isHarmful || combo.justAttacked))
+            // More generous check - if sword is visible, it's harmful
+            if (combo != null && (combo.isHarmful || combo.isAttacking || combo.justAttacked))
             {
                 // Calculate knockback direction (away from player)
                 Vector3 knockDir = (transform.position - hero.transform.position).normalized;
@@ -268,6 +278,7 @@ public class BeastHealth : MonoBehaviour, IDamageable
                 // Damage based on combo step (combo 3 = heavy hit)
                 float damage = combo.currentAttackAnim == 3 ? 2f : 1f;
 
+                Debug.Log($"[BeastHealth] HIT! Damage: {damage}, Combo: {combo.currentAttackAnim}");
                 TakeDamage(damage, knockDir);
             }
         }

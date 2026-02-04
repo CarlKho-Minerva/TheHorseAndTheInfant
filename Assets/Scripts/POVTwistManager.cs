@@ -49,11 +49,69 @@ public class POVTwistManager : MonoBehaviour
     private GameObject playerHero;
     private GameObject playerBeast;
     private bool showToBeContinued = false;
+    private GameObject[] caveWalls; // Dynamically created cave walls
 
     void Start()
     {
         // Find the hero
         playerHero = GameObject.FindGameObjectWithTag("Player");
+    }
+
+    /// <summary>
+    /// Creates a dark cave enclosure for Scene B
+    /// </summary>
+    void CreateCaveEnvironment()
+    {
+        // Change skybox to solid black
+        RenderSettings.skybox = null;
+        Camera.main.clearFlags = CameraClearFlags.SolidColor;
+        Camera.main.backgroundColor = Color.black;
+
+        // Create 4 walls around the player area
+        caveWalls = new GameObject[4];
+        Material darkMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        darkMat.color = new Color(0.1f, 0.08f, 0.06f); // Very dark brown
+
+        Vector3 center = playerBeast != null ? playerBeast.transform.position : Vector3.zero;
+        float wallSize = 20f;
+        float wallHeight = 10f;
+
+        // Front wall
+        caveWalls[0] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        caveWalls[0].transform.position = center + new Vector3(0, wallHeight / 2, wallSize / 2);
+        caveWalls[0].transform.localScale = new Vector3(wallSize, wallHeight, 1);
+        caveWalls[0].GetComponent<Renderer>().material = darkMat;
+        caveWalls[0].name = "CaveWall_Front";
+
+        // Back wall
+        caveWalls[1] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        caveWalls[1].transform.position = center + new Vector3(0, wallHeight / 2, -wallSize / 2);
+        caveWalls[1].transform.localScale = new Vector3(wallSize, wallHeight, 1);
+        caveWalls[1].GetComponent<Renderer>().material = darkMat;
+        caveWalls[1].name = "CaveWall_Back";
+
+        // Left wall
+        caveWalls[2] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        caveWalls[2].transform.position = center + new Vector3(-wallSize / 2, wallHeight / 2, 0);
+        caveWalls[2].transform.localScale = new Vector3(1, wallHeight, wallSize);
+        caveWalls[2].GetComponent<Renderer>().material = darkMat;
+        caveWalls[2].name = "CaveWall_Left";
+
+        // Right wall
+        caveWalls[3] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        caveWalls[3].transform.position = center + new Vector3(wallSize / 2, wallHeight / 2, 0);
+        caveWalls[3].transform.localScale = new Vector3(1, wallHeight, wallSize);
+        caveWalls[3].GetComponent<Renderer>().material = darkMat;
+        caveWalls[3].name = "CaveWall_Right";
+
+        // Create a ceiling
+        GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        ceiling.transform.position = center + new Vector3(0, wallHeight, 0);
+        ceiling.transform.localScale = new Vector3(wallSize, 1, wallSize);
+        ceiling.GetComponent<Renderer>().material = darkMat;
+        ceiling.name = "CaveCeiling";
+
+        Debug.Log("[POVTwist] Cave environment created - you are now INSIDE the cave.");
     }
 
     public void TriggerTwist()
@@ -193,12 +251,45 @@ public class POVTwistManager : MonoBehaviour
         Debug.Log("[POVTwist] You are now the Beast. Waiting in the den...");
 
         // ========================================
-        // PHASE 4: THE WAIT (Tension)
+        // PHASE 4: PLAYER CAN MOVE AS THE SLIME
         // ========================================
 
-        // Display "Wait for Mama..." or just silence
+        // Create cave walls (darken the scene further, add enclosure feeling)
+        CreateCaveEnvironment();
+
+        // Enable simple movement for the beast
         showWaitingText = true;
-        yield return new WaitForSeconds(waitBeforeHeroEnters);
+        float moveTime = waitBeforeHeroEnters;
+        float elapsed = 0f;
+        
+        while (elapsed < moveTime)
+        {
+            elapsed += Time.deltaTime;
+
+            // Allow player to move the beast around
+            if (playerBeast != null)
+            {
+                float h = Input.GetAxisRaw("Horizontal");
+                float v = Input.GetAxisRaw("Vertical");
+                Vector3 moveDir = new Vector3(h, 0, v).normalized;
+                
+                // Simple movement (no physics)
+                playerBeast.transform.position += moveDir * 3f * Time.deltaTime;
+
+                // Update camera to follow
+                Camera mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    Vector3 beastPos = playerBeast.transform.position;
+                    Vector3 targetCamPos = beastPos + new Vector3(0, 5, -6);
+                    mainCam.transform.position = Vector3.Lerp(mainCam.transform.position, targetCamPos, Time.deltaTime * 3f);
+                    mainCam.transform.LookAt(beastPos + Vector3.up);
+                }
+            }
+
+            yield return null;
+        }
+        
         showWaitingText = false;
 
         // ========================================

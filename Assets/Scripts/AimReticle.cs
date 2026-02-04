@@ -10,7 +10,7 @@ public class AimReticle : MonoBehaviour
     [Header("Appearance")]
     public float radius = 1.0f;
     public Color color = Color.yellow;
-    public float yOffset = 0.5f;  // Increased to be above ground
+    public float yOffset = 1.0f;  // Raised higher above ground
     public int segments = 32;
     public float lineWidth = 0.15f;
 

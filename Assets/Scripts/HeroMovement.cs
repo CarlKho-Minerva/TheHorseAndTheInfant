@@ -12,8 +12,8 @@ public class HeroMovement : MonoBehaviour
 
     [Header("Map Boundaries")]
     [Tooltip("Prevents falling off the map")]
-    public float xBound = 14f;
-    public float zBound = 14f;
+    public float xBound = 12f;  // Tighter bound
+    public float zBound = 12f;  // Tighter bound
 
     [Header("Ground Snapping")]
     [Tooltip("Layer(s) to consider as ground - should NOT include Enemy layer!")]
@@ -22,7 +22,7 @@ public class HeroMovement : MonoBehaviour
 
     [Header("Edge Blocking")]
     [Tooltip("Stop player before the actual edge")]
-    public float edgeBuffer = 1.0f; // Stop 1 unit before boundary
+    public float edgeBuffer = 2.0f; // Larger buffer to stop earlier
 
     private CharacterController controller;
     private Vector3 moveDir;

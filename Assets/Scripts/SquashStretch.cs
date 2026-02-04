@@ -23,7 +23,12 @@ public class SquashStretch : MonoBehaviour
     void Start()
     {
         originalScale = transform.localScale;
+        // Ensure original scale is positive to avoid BoxCollider warnings
+        originalScale.x = Mathf.Abs(originalScale.x);
+        originalScale.y = Mathf.Abs(originalScale.y);
+        originalScale.z = Mathf.Abs(originalScale.z);
         targetScale = originalScale;
+        transform.localScale = originalScale; // Apply the fix
     }
 
     void Update()

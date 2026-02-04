@@ -14,7 +14,7 @@ public class SimpleCombo : MonoBehaviour
     public MeshRenderer bladeMesh;
     [Header("Combat Feel")]
     public float maxComboDelay = 0.5f;
-    public float lungeForce = 5f; // Forward burst when attacking
+    public float lungeForce = 2f; // Reduced - Forward burst when attacking
     public float hitStopDuration = 0.05f; // Freeze frame on impact
 
     [Header("Audio")]
@@ -64,11 +64,12 @@ public class SimpleCombo : MonoBehaviour
             if (bladeCollider == null)
             {
                 bladeCollider = bladeMesh.gameObject.AddComponent<BoxCollider>();
-                bladeCollider.isTrigger = true;
-                // Make it big and generous
-                bladeCollider.size = new Vector3(0.5f, 2.5f, 0.5f);
-                Debug.Log("Created auto-collider for sword.");
             }
+            bladeCollider.isTrigger = true;
+            // Make it HUGE and generous for easy hits
+            bladeCollider.size = new Vector3(2f, 4f, 2f);
+            bladeCollider.center = new Vector3(0, 1f, 0);
+            Debug.Log("[SimpleCombo] Sword collider setup: size=" + bladeCollider.size);
             bladeMesh.gameObject.name = "Blade"; // Ensure name matches BeastHealth check
         }
     }
@@ -150,54 +151,90 @@ public class SimpleCombo : MonoBehaviour
         var flameEnhancer = GetComponentInChildren<FlameTrailEnhancer>();
         if(flameEnhancer) flameEnhancer.SetCombo(step);
 
-        // Define positions
-        Quaternion idleRot = Quaternion.identity;
-        Quaternion windupRot = (step == 3) ? Quaternion.Euler(-100, 0, 0) : Quaternion.Euler(0, (step == 1 ? -45 : 45), 0);
-        Quaternion strikeRot = (step == 3) ? Quaternion.Euler(90, 0, 0) : Quaternion.Euler(0, (step == 1 ? 90 : -90), 0);
-
-        // PHASE 1: WIND-UP
-        float t = 0;
-        float windupSpeed = (step == 3 ? 2f : 5f);
-        while (t < 1)
-        {
-            t += Time.deltaTime * windupSpeed;
-            swordPivot.localRotation = Quaternion.Slerp(idleRot, windupRot, t);
-            yield return null;
-        }
-
-        // PHASE 2: THE STRIKE
-        t = 0;
-        isHarmful = true;
-
-        // Sound
-        if (audioSource != null && comboSound != null)
-        {
-            audioSource.pitch = (step == 3) ? 0.7f : Random.Range(1.1f, 1.3f);
-            audioSource.PlayOneShot(comboSound);
-        }
-
-        // Swing
-        while (t < 1)
-        {
-            t += Time.deltaTime * 15f;
-            swordPivot.localRotation = Quaternion.Slerp(windupRot, strikeRot, t);
-            yield return null;
-        }
-        isHarmful = false;
-
-        // PHASE 3: RECOVERY
+        // COMBO 3: FULL 360 SPIN!
         if (step == 3)
         {
+            // Sound
+            if (audioSource != null && comboSound != null)
+            {
+                audioSource.pitch = 0.7f;
+                audioSource.PlayOneShot(comboSound);
+            }
+
+            isHarmful = true;
+
+            // Spin the entire player 360 degrees
+            float spinDuration = 0.4f;
+            float elapsed = 0f;
+            Quaternion startRot = transform.rotation;
+
+            while (elapsed < spinDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / spinDuration;
+                // Spin 360 degrees around Y axis
+                transform.rotation = startRot * Quaternion.Euler(0, t * 360f, 0);
+                // Also spin the sword outward
+                swordPivot.localRotation = Quaternion.Euler(0, 90, 0);
+                yield return null;
+            }
+
+            transform.rotation = startRot; // Reset to original facing
+            swordPivot.localRotation = Quaternion.identity;
+
+            isHarmful = false;
+
+            // JUICE
             if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.15f, 0.4f);
-            // Trigger burst effect on trail
             if(flameEnhancer) flameEnhancer.TriggerBurst();
+        }
+        else
+        {
+            // COMBO 1 & 2: Side slashes
+            Quaternion idleRot = Quaternion.identity;
+            Quaternion windupRot = Quaternion.Euler(0, (step == 1 ? -60 : 60), 0);
+            Quaternion strikeRot = Quaternion.Euler(0, (step == 1 ? 120 : -120), 0);
+
+            // PHASE 1: WIND-UP
+            float t = 0;
+            float windupSpeed = 8f;
+            while (t < 1)
+            {
+                t += Time.deltaTime * windupSpeed;
+                swordPivot.localRotation = Quaternion.Slerp(idleRot, windupRot, t);
+                yield return null;
+            }
+
+            // PHASE 2: THE STRIKE
+            t = 0;
+            isHarmful = true;
+
+            // Sound
+            if (audioSource != null && comboSound != null)
+            {
+                audioSource.pitch = Random.Range(1.1f, 1.3f);
+                audioSource.PlayOneShot(comboSound);
+            }
+
+            // Swing - SLOWER so isHarmful stays active longer
+            while (t < 1)
+            {
+                t += Time.deltaTime * 8f; // Slower swing = more time to hit
+                swordPivot.localRotation = Quaternion.Slerp(windupRot, strikeRot, t);
+                yield return null;
+            }
+
+            // Keep harmful for a bit longer
+            yield return new WaitForSeconds(0.1f);
+            isHarmful = false;
+
+            swordPivot.localRotation = idleRot;
         }
 
         yield return new WaitForSeconds(0.1f);
 
         if (trail != null) trail.emitting = false;
         if (bladeMesh != null) bladeMesh.enabled = false;
-        swordPivot.localRotation = idleRot;
         isAttacking = false;
     }
 
